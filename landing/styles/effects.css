@@ -1,0 +1,18 @@
+/* styles/effects.css */
+
+[data-effect="spotlight"] .name .ch {
+  opacity: var(--spot, 0.18);
+  filter: blur(var(--spotBlur, 0px));
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .name .ch {
+    transition: none !important;
+  }
+  .monogram {
+    transition: none !important;
+  }
+  .underline-wrap {
+    transition: none !important;
+  }
+}

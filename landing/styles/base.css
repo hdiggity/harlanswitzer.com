@@ -1,0 +1,94 @@
+/* styles/base.css */
+:root{
+  --bg:#ffffff;
+  --fg:#6d28d9;
+  --muted:rgba(109,40,217,.55);
+  --card:rgba(109,40,217,.03);
+  --border:rgba(109,40,217,.10);
+  --shadow:rgba(109,40,217,.08);
+  --glow:rgba(109,40,217,.06);
+  --ease:cubic-bezier(.2,.9,.1,1);
+  --radius:28px;
+  --pad:clamp(18px, 3vw, 44px);
+}
+
+*{box-sizing:border-box}
+html,body{height:100%}
+body{
+  margin:0;
+  font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial;
+  background: var(--bg);
+  color: var(--fg);
+  overflow:hidden;
+}
+
+.app{
+  height:100%;
+  width:100%;
+  position:relative;
+}
+
+.stage{
+  position:relative;
+  height:100%;
+  width:100%;
+  display:grid;
+  place-items:center;
+  padding: var(--pad);
+}
+
+.name{
+  margin:0;
+  padding:0;
+  line-height:1.0;
+  font-weight:850;
+  letter-spacing: clamp(.02em, .5vw, .10em);
+  font-size: clamp(24px, 5.6vw, 86px);
+  text-align:center;
+  white-space: nowrap;
+  user-select:none;
+  transform-style:preserve-3d;
+}
+
+.name .ch{
+  display:inline-block;
+  will-change:transform, filter, opacity;
+  transform:
+    translate3d(var(--tx,0px), var(--ty,0px), 0px)
+    rotateX(var(--rx,0deg))
+    rotateY(var(--ry,0deg))
+    scale(var(--sc,1));
+  transition:
+    transform 420ms var(--ease),
+    filter 420ms var(--ease),
+    opacity 420ms var(--ease);
+  filter: blur(var(--bl,0px));
+  opacity: var(--op,1);
+}
+
+.corner{
+  position:absolute;
+  bottom:18px;
+  display:flex;
+  gap:10px;
+  align-items:center;
+  color: rgba(210,215,235,.70);
+  font-size:12px;
+  letter-spacing:.14em;
+  text-transform:uppercase;
+  user-select:none;
+}
+.corner-left{left:20px}
+.corner-right{right:20px; gap:10px}
+.dot{
+  width:7px;height:7px;border-radius:999px;
+  background: rgba(140,180,255,.9);
+  box-shadow: 0 0 18px rgba(140,180,255,.55);
+}
+.pill{
+  border:1px solid rgba(255,255,255,.14);
+  background: rgba(255,255,255,.03);
+  padding:8px 10px;
+  border-radius:999px;
+  backdrop-filter: blur(10px);
+}

@@ -1,0 +1,15 @@
+/* styles/themes.css */
+.app[data-theme="dark"]{
+  --bg:#ffffff;
+  --fg:#6d28d9;
+  --card:rgba(109,40,217,.03);
+  --border:rgba(109,40,217,.10);
+  --glow:rgba(109,40,217,.06);
+}
+.app[data-theme="print"]{
+  --bg:#ffffff;
+  --fg:#6d28d9;
+  --card:rgba(109,40,217,.03);
+  --border:rgba(109,40,217,.10);
+  --glow:rgba(109,40,217,.06);
+}
