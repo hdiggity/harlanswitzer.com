@@ -70,7 +70,7 @@ export async function onRequestPost(context) {
 
   // ── success — create session ───────────────────────────────────────────────
   const sessionId = crypto.randomUUID();
-  const expiresAt = now + 7 * 24 * 60 * 60;
+  const expiresAt = now + 60 * 60;
 
   try {
     await env.db.prepare(
@@ -92,7 +92,7 @@ export async function onRequestPost(context) {
     status: 200,
     headers: {
       'Content-Type': 'application/json',
-      'Set-Cookie': `session=${cookieVal}; HttpOnly; Secure; Path=/; Max-Age=604800; SameSite=Lax`,
+      'Set-Cookie': `session=${cookieVal}; HttpOnly; Secure; Path=/; Max-Age=3600; SameSite=Lax`,
     },
   });
 }

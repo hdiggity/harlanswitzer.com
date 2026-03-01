@@ -1,6 +1,9 @@
 #!/usr/bin/env zsh
 set -euo pipefail
 
+git add -A
+git diff-index --quiet HEAD || git commit -m "deploy"
+
 VER=$(git rev-parse --short HEAD 2>/dev/null || date +%s)
 DIST=$(mktemp -d)
 trap "rm -rf '$DIST'" EXIT
@@ -18,7 +21,8 @@ sed -i '' "s/v=dev/v=$VER/g" "$DIST/index.html"
 [[ -f "$DIST/stats.html" ]]       && sed -i '' "s/v=dev/v=$VER/g" "$DIST/stats.html"
 [[ -f "$DIST/users.html" ]]       && sed -i '' "s/v=dev/v=$VER/g" "$DIST/users.html"
 [[ -f "$DIST/bests/index.html" ]] && sed -i '' "s/v=dev/v=$VER/g" "$DIST/bests/index.html"
-[[ -f "$DIST/bests/beer.html" ]]  && sed -i '' "s/v=dev/v=$VER/g" "$DIST/bests/beer.html"
+[[ -f "$DIST/bests/beer.html" ]]   && sed -i '' "s/v=dev/v=$VER/g" "$DIST/bests/beer.html"
+[[ -f "$DIST/bests/whisky.html" ]] && sed -i '' "s/v=dev/v=$VER/g" "$DIST/bests/whisky.html"
 
 print "pushing $VER..."
 git push -q

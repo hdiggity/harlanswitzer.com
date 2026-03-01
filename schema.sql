@@ -112,3 +112,58 @@ CREATE INDEX IF NOT EXISTS bests_beer_history_beer ON bests_beer_history (beer_i
 CREATE INDEX IF NOT EXISTS bests_beers_type_rank    ON bests_beers (type, rank_index);
 CREATE INDEX IF NOT EXISTS bests_sessions_user_status ON bests_rank_sessions (created_by, status);
 CREATE INDEX IF NOT EXISTS bests_beers_type_product  ON bests_beers (type, product);
+
+CREATE TABLE IF NOT EXISTS bests_whiskies (
+  id                INTEGER PRIMARY KEY AUTOINCREMENT,
+  distillery        TEXT NOT NULL,
+  product           TEXT NOT NULL,
+  country_territory TEXT,
+  age               TEXT,
+  type              TEXT NOT NULL,
+  where_name        TEXT,
+  where_city_state  TEXT,
+  where_country     TEXT,
+  when_text         TEXT,
+  when_ts           INTEGER,
+  notes             TEXT,
+  rank_index        INTEGER,
+  score             REAL,
+  created_by        INTEGER NOT NULL REFERENCES users(id),
+  created_at        INTEGER NOT NULL,
+  updated_at        INTEGER NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS bests_whisky_rank_sessions (
+  id                  TEXT PRIMARY KEY,
+  new_whisky_id       INTEGER NOT NULL REFERENCES bests_whiskies(id),
+  whisky_type         TEXT NOT NULL,
+  low_index           INTEGER NOT NULL,
+  high_index          INTEGER NOT NULL,
+  candidate_whisky_id INTEGER,
+  status              TEXT NOT NULL,
+  created_by          INTEGER NOT NULL REFERENCES users(id),
+  created_at          INTEGER NOT NULL,
+  updated_at          INTEGER NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS bests_whisky_rank_choices (
+  id                  INTEGER PRIMARY KEY AUTOINCREMENT,
+  session_id          TEXT NOT NULL REFERENCES bests_whisky_rank_sessions(id),
+  candidate_whisky_id INTEGER NOT NULL REFERENCES bests_whiskies(id),
+  winner_whisky_id    INTEGER NOT NULL REFERENCES bests_whiskies(id),
+  created_at          INTEGER NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS bests_whisky_history (
+  id         INTEGER PRIMARY KEY AUTOINCREMENT,
+  whisky_id  INTEGER NOT NULL,
+  action     TEXT NOT NULL,
+  snapshot   TEXT NOT NULL,
+  changed_by INTEGER NOT NULL REFERENCES users(id),
+  changed_at INTEGER NOT NULL
+);
+
+CREATE INDEX IF NOT EXISTS bests_whiskies_type_rank         ON bests_whiskies (type, rank_index);
+CREATE INDEX IF NOT EXISTS bests_whisky_sessions_user_status ON bests_whisky_rank_sessions (created_by, status);
+CREATE INDEX IF NOT EXISTS bests_whiskies_type_product       ON bests_whiskies (type, product);
+CREATE INDEX IF NOT EXISTS bests_whisky_history_whisky       ON bests_whisky_history (whisky_id, changed_at);
