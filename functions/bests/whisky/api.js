@@ -270,7 +270,7 @@ async function normalizeDates(env) {
   }
 }
 
-// ── sync NULL fields from sheet ───────────────────────────────────────────────
+// ── sync country (and other fields) from sheet for existing rows ──────────────
 
 async function syncFromSheet(env) {
   const sheetId = env.BESTS_WHISKY_SHEET_ID || DEFAULT_SHEET_ID;
@@ -307,28 +307,32 @@ async function syncFromSheet(env) {
     const product    = (cols[iProduct]    || '').trim();
     if (!distillery || !product) continue;
 
-    const fields = [], vals = [];
-    const maybeSet = (idx, col) => {
-      if (idx >= 0) { const v = (cols[idx] || '').trim() || null; if (v) { fields.push(`${col} = ?`); vals.push(v); } }
-    };
-    maybeSet(iCountry, 'country_territory');
-    maybeSet(iAge, 'age');
-    maybeSet(iWhereName, 'where_name');
-    maybeSet(iWhereCityState, 'where_city_state');
-    maybeSet(iWhereCountry, 'where_country');
-    maybeSet(iWhen, 'when_text');
-    if (iWhen >= 0) {
-      const ts = parseWhenTs((cols[iWhen] || '').trim());
-      if (ts !== null) { fields.push('when_ts = ?'); vals.push(ts); }
-    }
-    maybeSet(iNotes, 'notes');
-    if (!fields.length) continue;
+    const v = idx => idx >= 0 ? (cols[idx] || '').trim() || null : null;
+    const country  = v(iCountry);
+    const age      = v(iAge);
+    const whereName = v(iWhereName);
+    const whereCityState = v(iWhereCityState);
+    const whereCountry = v(iWhereCountry);
+    const whenText = v(iWhen);
+    const whenTs   = parseWhenTs(whenText);
+    const notes    = v(iNotes);
 
-    fields.push('updated_at = ?'); vals.push(now);
-    const nullChecks = fields.slice(0, -1).map(f => `${f.split(' ')[0]} IS NULL`).join(' AND ');
-    await env.db.prepare(
-      `UPDATE bests_whiskies SET ${fields.join(', ')} WHERE LOWER(distillery) = LOWER(?) AND LOWER(product) = LOWER(?) AND (${nullChecks})`
-    ).bind(...vals, distillery, product).run().catch(() => {});
+    await env.db.prepare(`
+      UPDATE bests_whiskies SET
+        country_territory = COALESCE(country_territory, ?),
+        age               = COALESCE(age, ?),
+        where_name        = COALESCE(where_name, ?),
+        where_city_state  = COALESCE(where_city_state, ?),
+        where_country     = COALESCE(where_country, ?),
+        when_text         = COALESCE(when_text, ?),
+        when_ts           = COALESCE(when_ts, ?),
+        notes             = COALESCE(notes, ?),
+        updated_at        = ?
+      WHERE LOWER(distillery) = LOWER(?) AND LOWER(product) = LOWER(?)
+    `).bind(
+      country, age, whereName, whereCityState, whereCountry,
+      whenText, whenTs, notes, now, distillery, product
+    ).run().catch(() => {});
   }
 }
 
