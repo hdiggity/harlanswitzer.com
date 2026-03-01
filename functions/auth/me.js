@@ -15,7 +15,7 @@ export async function onRequestGet(context) {
     : null;
 
   return new Response(
-    JSON.stringify({ loggedIn: true, user_id: session.user_id, username: user?.username || null }),
+    JSON.stringify({ loggedIn: true, user_id: session.user_id, username: user?.username || null, session_id: session.id }),
     { status: 200, headers: { 'Content-Type': 'application/json' } }
   );
 }
