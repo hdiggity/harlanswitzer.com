@@ -1,70 +1,5 @@
 import { verifySession } from '../_auth.js';
 
-// ── crypto helpers ────────────────────────────────────────────────────────────
-
-async function hmacHex(data, key) {
-  const keyMaterial = await crypto.subtle.importKey(
-    'raw', new TextEncoder().encode(key),
-    { name: 'HMAC', hash: 'SHA-256' }, false, ['sign']
-  );
-  const sig = await crypto.subtle.sign('HMAC', keyMaterial, new TextEncoder().encode(data));
-  return Array.from(new Uint8Array(sig)).map(b => b.toString(16).padStart(2, '0')).join('');
-}
-
-function timingSafeStrEqual(a, b) {
-  if (a.length !== b.length) return false;
-  let diff = 0;
-  for (let i = 0; i < a.length; i++) diff |= a.charCodeAt(i) ^ b.charCodeAt(i);
-  return diff === 0;
-}
-
-async function pbkdf2Hex(password, salt, iterations) {
-  const keyMaterial = await crypto.subtle.importKey(
-    'raw', new TextEncoder().encode(password), 'PBKDF2', false, ['deriveBits']
-  );
-  const bits = await crypto.subtle.deriveBits(
-    { name: 'PBKDF2', salt: new TextEncoder().encode(salt), iterations, hash: 'SHA-256' },
-    keyMaterial, 256
-  );
-  return Array.from(new Uint8Array(bits)).map(b => b.toString(16).padStart(2, '0')).join('');
-}
-
-async function timingSafeHashEqual(a, b) {
-  const enc = new TextEncoder();
-  const key = await crypto.subtle.generateKey({ name: 'HMAC', hash: 'SHA-256' }, false, ['sign']);
-  const [sa, sb] = await Promise.all([
-    crypto.subtle.sign('HMAC', key, enc.encode(a)),
-    crypto.subtle.sign('HMAC', key, enc.encode(b)),
-  ]);
-  const va = new Uint8Array(sa), vb = new Uint8Array(sb);
-  let diff = 0;
-  for (let i = 0; i < va.length; i++) diff |= va[i] ^ vb[i];
-  return diff === 0;
-}
-
-// ── bests access token (8-hour, per-session) ──────────────────────────────────
-
-const TOKEN_TTL = 8 * 3600;
-const TOKEN_SCOPE = ':bests-access-v1';
-
-async function mintBestsToken(userId, env) {
-  const expires = Math.floor(Date.now() / 1000) + TOKEN_TTL;
-  const payload = userId + ':' + expires;
-  const sig = await hmacHex(payload, env.SESSION_SIGNING_KEY + TOKEN_SCOPE);
-  return payload + ':' + sig;
-}
-
-async function verifyBestsToken(header, userId, env) {
-  if (!header) return false;
-  const parts = header.split(':');
-  if (parts.length !== 3) return false;
-  const [tokenUserId, expires, sig] = parts;
-  if (parseInt(tokenUserId, 10) !== userId) return false;
-  if (parseInt(expires, 10) <= Math.floor(Date.now() / 1000)) return false;
-  const expected = await hmacHex(tokenUserId + ':' + expires, env.SESSION_SIGNING_KEY + TOKEN_SCOPE);
-  return timingSafeStrEqual(expected, sig);
-}
-
 // ── date helpers ─────────────────────────────────────────────────────────────
 
 // Parses "M/YY", "MM/YY", "M/YYYY", "MM/YYYY" → Unix timestamp for first of that month UTC
@@ -392,26 +327,6 @@ function json(obj, status = 200) {
 
 // ── handlers ──────────────────────────────────────────────────────────────────
 
-async function handleVerifyAccess(request, env, userId) {
-  let body;
-  try { body = await request.json(); } catch { return json({ error: 'bad request' }, 400); }
-  const { password } = body || {};
-  if (!password) return json({ error: 'password required' }, 400);
-
-  const userFull = await env.db.prepare(
-    'SELECT password_hash, salt, iterations FROM users WHERE id = ?'
-  ).bind(userId).first();
-  if (!userFull) return json({ error: 'unauthorized' }, 401);
-
-  const hash = await pbkdf2Hex(password, userFull.salt, userFull.iterations);
-  if (!(await timingSafeHashEqual(hash, userFull.password_hash))) {
-    return json({ error: 'invalid password' }, 401);
-  }
-
-  const token = await mintBestsToken(userId, env);
-  return json({ token });
-}
-
 async function handleGet(env, userId) {
   await ensureWhenTsColumn(env);
   await ensureHistoryTable(env);
@@ -591,21 +506,6 @@ export async function onRequest(context) {
   if (!isAllowed(user.username, env)) return json({ error: 'forbidden' }, 403);
 
   const method = request.method.toUpperCase();
-
-  // verify_access is the only POST that doesn't need the bests token
-  if (method === 'POST') {
-    let bodyClone;
-    try { bodyClone = await request.clone().json(); } catch { return json({ error: 'bad request' }, 400); }
-    if (bodyClone?.action === 'verify_access') {
-      return handleVerifyAccess(request, env, user.id);
-    }
-  }
-
-  // all other routes require a valid bests token
-  const token = request.headers.get('X-Bests-Token');
-  const tokenOk = await verifyBestsToken(token, user.id, env);
-  if (!tokenOk) return json({ error: 'token required' }, 401);
-
   if (method === 'GET') return handleGet(env, user.id);
   if (method === 'POST') return handlePost(request, env, user.id);
   return json({ error: 'method not allowed' }, 405);

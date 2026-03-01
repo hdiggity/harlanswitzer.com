@@ -8,7 +8,6 @@
     filters: { country: '', brewery: '', where: '' },
     sortCol: 'score',
     sortDir: 'desc',
-    token: null,
   };
 
   // ── helpers ───────────────────────────────────────────────────────────────
@@ -33,7 +32,7 @@
   }
 
   function api(method, body) {
-    var opts = { method: method, headers: { 'X-Bests-Token': state.token || '' } };
+    var opts = { method: method, headers: {} };
     if (body) { opts.headers['Content-Type'] = 'application/json'; opts.body = JSON.stringify(body); }
     return fetch('/bests/api', opts);
   }
@@ -284,7 +283,7 @@
       event_notes:      el('e-notes').value.trim() || null,
     };
     var res = await api('POST', { action: 'update_beer', beer_id: editingBeerId, updates: updates });
-    if (res.status === 401) { closeEditModal(); location.href = '/bests'; return; }
+    if (res.status === 401) { closeEditModal(); location.href = '/'; return; }
     if (!res.ok) { el('editSaveStatus').textContent = 'error'; return; }
     var d = await res.json();
     el('editSaveStatus').textContent = 'saved';
@@ -296,7 +295,7 @@
   async function deleteBeer(beerId) {
     if (!confirm('remove this beer?')) return;
     var res = await api('POST', { action: 'delete_beer', beer_id: beerId });
-    if (res.status === 401) { location.href = '/bests'; return; }
+    if (res.status === 401) { location.href = '/'; return; }
     if (!res.ok) { var d = await res.json(); alert(d.error || 'error'); return; }
     await loadData();
   }
@@ -319,7 +318,7 @@
     var sessionId = state.activeSession && state.activeSession.id;
     if (!sessionId) return;
     var res = await api('POST', { action: 'submit_choice', session_id: sessionId, winner: winner });
-    if (res.status === 401) { hideCmpModal(); location.href = '/bests'; return; }
+    if (res.status === 401) { hideCmpModal(); location.href = '/'; return; }
     var d = await res.json();
     if (!res.ok) { alert(d.error || 'error'); return; }
     if (d.completed) {
@@ -350,7 +349,7 @@
   // ── load data ─────────────────────────────────────────────────────────────
   async function loadData() {
     var res = await api('GET');
-    if (res.status === 401) { location.href = '/bests'; return; }
+    if (res.status === 401) { location.href = '/'; return; }
     if (res.status === 403) { el('beerList').innerHTML = '<p class="notice">access restricted</p>'; return; }
     if (!res.ok) { el('beerList').innerHTML = '<p class="notice">failed to load (' + res.status + ')</p>'; return; }
     var data = await res.json();
@@ -380,8 +379,7 @@
       fetch('/auth/logout', { method: 'POST' }).then(function () { location.href = '/'; });
     });
 
-    state.token = localStorage.getItem('bests_token');
-    if (!state.token) { location.href = '/bests'; return; }
+
 
     // add modal
     el('addBeerBtn').addEventListener('click', openAddModal);
@@ -407,7 +405,7 @@
       var res = await api('POST', { action: 'create_beer', beer: beer });
       var d = await res.json();
       el('addSubmit').disabled = false;
-      if (res.status === 401) { closeAddModal(); location.href = '/bests'; return; }
+      if (res.status === 401) { closeAddModal(); location.href = '/'; return; }
       if (!res.ok) { el('addError').textContent = d.error || 'error'; return; }
       closeAddModal();
       if (d.completed) {

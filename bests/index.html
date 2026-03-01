@@ -46,40 +46,6 @@
     .hub-link:hover { color: var(--fg); border-color: var(--fg); background: rgba(109,40,217,.04); }
 
     @media (max-width: 400px) { .hub-nav { flex-direction: column; } .hub-link { width: 100%; } }
-
-    /* password modal */
-    .modal-backdrop {
-      position: fixed; inset: 0; background: rgba(0,0,0,.35);
-      display: flex; align-items: center; justify-content: center; z-index: 100; padding: 16px;
-    }
-    .modal-backdrop[hidden] { display: none; }
-    .modal-box {
-      background: var(--bg); border: 1px solid var(--border); border-radius: 12px;
-      padding: 28px 32px; width: 100%; max-width: 360px; position: relative;
-    }
-    .modal-title {
-      font-size: 10px; font-weight: 700; letter-spacing: .14em; text-transform: uppercase;
-      color: var(--muted); margin-bottom: 20px;
-    }
-    .pw-form { display: flex; flex-direction: column; gap: 10px; }
-    .pw-hint { font-size: 12px; color: var(--muted); }
-    .field { display: flex; flex-direction: column; gap: 4px; }
-    label { font-size: 10px; letter-spacing: .1em; text-transform: uppercase; color: var(--muted); }
-    input[type="password"] {
-      border: 1px solid var(--border); border-radius: 6px; padding: 8px 10px;
-      font-family: var(--font); font-size: 13px; color: var(--fg); background: var(--bg);
-      outline: none; transition: border-color 150ms; width: 100%;
-    }
-    input:focus { border-color: var(--fg); }
-    .modal-error { font-size: 12px; color: #dc2626; min-height: 16px; }
-    .modal-actions { display: flex; justify-content: flex-end; margin-top: 4px; }
-    .btn-primary {
-      background: var(--fg); color: #fff; border: 1px solid var(--fg);
-      font-size: 10px; letter-spacing: .1em; text-transform: uppercase;
-      padding: 7px 18px; border-radius: 6px; cursor: pointer; font-family: var(--font);
-    }
-    .btn-primary:hover { opacity: .88; }
-    .btn-primary:disabled { opacity: .5; cursor: default; }
   </style>
 </head>
 <body>
@@ -95,37 +61,9 @@
     </nav>
   </div>
 
-  <!-- password gate (no close — must verify once per session) -->
-  <div id="pwModal" class="modal-backdrop">
-    <div class="modal-box">
-      <p class="modal-title">verify identity</p>
-      <form id="pwForm" class="pw-form">
-        <p class="pw-hint">enter your password to access bests</p>
-        <div class="field">
-          <label for="pwInput">password</label>
-          <input id="pwInput" type="password" autocomplete="current-password" required />
-        </div>
-        <span class="modal-error" id="pwError"></span>
-        <div class="modal-actions">
-          <button type="submit" class="btn-primary" id="pwSubmit">verify</button>
-        </div>
-      </form>
-    </div>
-  </div>
-
   <script>
     (function () {
-      var token = localStorage.getItem('bests_token');
-
-      function showHub(username) {
-        document.getElementById('pwModal').setAttribute('hidden', '');
-        var hub = document.getElementById('hub');
-        hub.style.display = '';
-        if (username) document.getElementById('welcomeMsg').textContent = username + "'s bests";
-      }
-
       document.getElementById('logoutBtn').addEventListener('click', function () {
-        localStorage.removeItem('bests_token');
         fetch('/auth/logout', { method: 'POST' }).then(function () { location.href = '/'; });
       });
 
@@ -133,36 +71,9 @@
         .then(function (r) { return r.json(); })
         .then(function (d) {
           if (!d.loggedIn) { location.href = '/'; return; }
-
-          // if token already stored, skip password gate
-          if (token) { showHub(d.username); return; }
-
-          // show password modal
-          document.getElementById('pwInput').focus();
-          document.getElementById('pwForm').addEventListener('submit', function (e) {
-            e.preventDefault();
-            var btn = document.getElementById('pwSubmit');
-            btn.disabled = true;
-            document.getElementById('pwError').textContent = '';
-            fetch('/bests/api', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ action: 'verify_access', password: document.getElementById('pwInput').value }),
-            })
-              .then(function (r) { return r.json().then(function (body) { return { ok: r.ok, body: body }; }); })
-              .then(function (res) {
-                btn.disabled = false;
-                if (!res.ok) {
-                  document.getElementById('pwError').textContent = res.body.error || 'verification failed';
-                  document.getElementById('pwInput').value = '';
-                  document.getElementById('pwInput').focus();
-                  return;
-                }
-                localStorage.setItem('bests_token', res.body.token);
-                showHub(d.username);
-              })
-              .catch(function () { btn.disabled = false; document.getElementById('pwError').textContent = 'network error'; });
-          });
+          var hub = document.getElementById('hub');
+          hub.style.display = '';
+          if (d.username) document.getElementById('welcomeMsg').textContent = d.username + "'s bests";
         })
         .catch(function () { location.href = '/'; });
     })();
