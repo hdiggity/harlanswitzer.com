@@ -6,6 +6,7 @@
     newBeer: null,
     filterType: 'all',
     filters: { country: '', brewery: '', where: '', sub_type: '' },
+    search: '',
     sortCol: 'score',
     sortDir: 'desc',
   };
@@ -18,17 +19,43 @@
     return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
   }
 
+  var ISO_TO_COUNTRY = {
+    US:'United States', JP:'Japan', IE:'Ireland', IN:'India', TW:'Taiwan',
+    CA:'Canada', NZ:'New Zealand', AU:'Australia', SE:'Sweden', IS:'Iceland',
+    DE:'Germany', FI:'Finland', FR:'France', GB:'United Kingdom',
+    ZA:'South Africa', MX:'Mexico', CZ:'Czech Republic', NO:'Norway',
+    DK:'Denmark', NL:'Netherlands', CH:'Switzerland', IT:'Italy', ES:'Spain',
+    PT:'Portugal', BR:'Brazil', PL:'Poland', BE:'Belgium',
+  };
+
   function stripEmoji(s) {
     if (s == null) return '';
-    return String(s).replace(/[\u{1F1E0}-\u{1F1FF}\u{1F300}-\u{1FAFF}\u{2600}-\u{27BF}\uFE0F\u200D]/gu, '').trim();
+    return String(s).replace(/[\u{1F1E0}-\u{1F1FF}\u{1F300}-\u{1FAFF}\u{2600}-\u{27BF}\u{E0000}-\u{E007F}\uFE0F\u200D]/gu, '').trim();
+  }
+
+  function emojiToCountry(s) {
+    if (s == null) return '';
+    var str = String(s).trim();
+    if (!str) return '';
+    if (str.includes('\uE0073\uE0063\uE0074')) return 'Scotland';
+    if (str.includes('\uE0065\uE006E\uE0067')) return 'England';
+    if (str.includes('\uE0077\uE006C\uE0073')) return 'Wales';
+    var cps = Array.from(str).map(function (c) { return c.codePointAt(0); });
+    var ri = cps.filter(function (cp) { return cp >= 0x1F1E0 && cp <= 0x1F1FF; });
+    if (ri.length >= 2) {
+      var iso = ri.slice(0, 2).map(function (cp) { return String.fromCharCode(cp - 0x1F1E6 + 65); }).join('');
+      if (ISO_TO_COUNTRY[iso]) return ISO_TO_COUNTRY[iso];
+    }
+    return stripEmoji(str) || str;
   }
 
   function formatWhen(b) {
+    if (b.when_text) return b.when_text;
     if (b.when_ts) {
       var d = new Date(b.when_ts * 1000);
-      return (d.getUTCMonth() + 1) + '/' + d.getUTCDate() + '/' + d.getUTCFullYear();
+      return (d.getUTCMonth() + 1) + '/' + d.getUTCFullYear();
     }
-    return b.when_text || '';
+    return '';
   }
 
   function api(method, body) {
@@ -45,7 +72,7 @@
       if (b.brewery)           sets.brewery.add(b.brewery);
       if (b.type)              sets.type.add(b.type);
       if (b.sub_type)          sets.sub_type.add(b.sub_type);
-      if (b.country_territory) sets.country.add(stripEmoji(b.country_territory));
+      if (b.country_territory) sets.country.add(emojiToCountry(b.country_territory));
       if (b.where_name)        sets.where_name.add(b.where_name);
       if (b.where_city_state)  sets.where_city.add(b.where_city_state);
       if (b.where_country)     sets.where_country.add(b.where_country);
@@ -94,7 +121,7 @@
       ? state.allBeers
       : state.allBeers.filter(function (b) { return b.type === state.filterType; });
 
-    var countries  = Array.from(new Set(base.map(function (b) { return stripEmoji(b.country_territory || ''); }).filter(Boolean))).sort();
+    var countries  = Array.from(new Set(base.map(function (b) { return emojiToCountry(b.country_territory || ''); }).filter(Boolean))).sort();
     var breweries  = Array.from(new Set(base.map(function (b) { return b.brewery || ''; }).filter(Boolean))).sort();
     var wheres     = Array.from(new Set(base.map(function (b) { return b.where_city_state || ''; }).filter(Boolean))).sort();
     var subTypes   = Array.from(new Set(base.map(function (b) { return b.sub_type || ''; }).filter(Boolean))).sort();
@@ -142,7 +169,7 @@
     if (state.filterType !== 'all') beers = beers.filter(function (b) { return b.type === state.filterType; });
     if (state.filters.country) {
       var fc = state.filters.country.toLowerCase();
-      beers = beers.filter(function (b) { return b.country_territory && stripEmoji(b.country_territory).toLowerCase().includes(fc); });
+      beers = beers.filter(function (b) { return b.country_territory && emojiToCountry(b.country_territory).toLowerCase().includes(fc); });
     }
     if (state.filters.brewery) {
       var fb = state.filters.brewery.toLowerCase();
@@ -155,6 +182,14 @@
     if (state.filters.where) {
       var fw = state.filters.where.toLowerCase();
       beers = beers.filter(function (b) { return b.where_city_state && b.where_city_state.toLowerCase().includes(fw); });
+    }
+    if (state.search) {
+      var sq = state.search.toLowerCase();
+      beers = beers.filter(function (b) {
+        return [b.product, b.brewery, b.type, b.sub_type, emojiToCountry(b.country_territory || ''),
+                b.where_name, b.where_city_state, b.where_country, b.when_text, b.notes]
+          .some(function (v) { return v && v.toLowerCase().includes(sq); });
+      });
     }
     var col = state.sortCol, dir = state.sortDir;
     beers.sort(function (a, b) {
@@ -209,7 +244,7 @@
         '<td>' + score + '</td>' +
         '<td>' + product + '</td>' +
         '<td>' + esc(b.brewery) + '</td>' +
-        '<td>' + esc(stripEmoji(b.country_territory || '')) + '</td>' +
+        '<td>' + esc(emojiToCountry(b.country_territory || '')) + '</td>' +
         '<td>' + esc(where) + '</td>' +
         '<td>' + esc(formatWhen(b)) + '</td>' +
         '<td class="cell-notes-col">' + notes + '</td>' +
@@ -257,7 +292,7 @@
     el('e-product').value       = beer.product || '';
     el('e-type').value          = beer.type || '';
     el('e-sub-type').value      = beer.sub_type || '';
-    el('e-country').value       = stripEmoji(beer.country_territory || '');
+    el('e-country').value       = emojiToCountry(beer.country_territory || '');
     el('e-where-name').value    = beer.where_name || '';
     el('e-where-city').value    = beer.where_city_state || '';
     el('e-where-country').value = beer.where_country || '';
@@ -300,6 +335,25 @@
     el('editSaveStatus').textContent = 'saved';
     var idx = state.allBeers.findIndex(function (b) { return b.id === editingBeerId; });
     if (idx >= 0) { state.allBeers[idx] = d.updated_beer; renderTypeFilter(); renderFilterBar(); renderList(); }
+  }
+
+  // ── re-rank beer ──────────────────────────────────────────────────────────
+  async function rerankBeer() {
+    var beerId = editingBeerId;
+    if (!beerId) return;
+    closeEditModal();
+    var res = await api('POST', { action: 'rerank_beer', beer_id: beerId });
+    if (res.status === 401) { location.href = '/'; return; }
+    var d = await res.json();
+    if (!res.ok) { alert(d.error || 'error'); return; }
+    if (d.completed) {
+      await loadData();
+    } else {
+      state.activeSession = { id: d.session_id, new_beer_id: d.created_beer.id };
+      state.newBeer = d.created_beer;
+      await loadData();
+      showComparison(d.created_beer, d.next_comparison.candidate);
+    }
   }
 
   // ── delete beer ───────────────────────────────────────────────────────────
@@ -390,6 +444,11 @@
       fetch('/auth/logout', { method: 'POST' }).then(function () { location.href = '/'; });
     });
 
+    el('searchInput').addEventListener('input', function () {
+      state.search = this.value;
+      renderList();
+    });
+
 
 
     // add modal
@@ -432,6 +491,7 @@
     // edit modal
     el('editModalClose').addEventListener('click', closeEditModal);
     el('editCancel').addEventListener('click', closeEditModal);
+    el('editRerank').addEventListener('click', rerankBeer);
     ['e-brewery','e-product','e-type','e-sub-type','e-country',
      'e-where-name','e-where-city','e-where-country','e-when','e-notes'].forEach(function (id) {
       var input = el(id);

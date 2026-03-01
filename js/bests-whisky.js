@@ -6,6 +6,7 @@
     newWhisky: null,
     filterType: 'all',
     filters: { country: '', distillery: '', age: '', where: '' },
+    search: '',
     sortCol: 'score',
     sortDir: 'desc',
   };
@@ -180,6 +181,14 @@
       var fw = state.filters.where.toLowerCase();
       whiskies = whiskies.filter(function (w) { return w.where_city_state && w.where_city_state.toLowerCase().includes(fw); });
     }
+    if (state.search) {
+      var sq = state.search.toLowerCase();
+      whiskies = whiskies.filter(function (w) {
+        return [w.product, w.distillery, w.type, emojiToCountry(w.country_territory || ''),
+                w.where_name, w.where_city_state, w.where_country, w.age, w.when_text, w.notes]
+          .some(function (v) { return v && v.toLowerCase().includes(sq); });
+      });
+    }
     var col = state.sortCol, dir = state.sortDir;
     whiskies.sort(function (a, b) {
       var av = sortValue(a, col), bv = sortValue(b, col);
@@ -331,6 +340,25 @@
     }
   }
 
+  // ── re-rank whisky ────────────────────────────────────────────────────────
+  async function rerankWhisky() {
+    var whiskyId = editingWhiskyId;
+    if (!whiskyId) return;
+    closeEditModal();
+    var res = await api('POST', { action: 'rerank_whisky', whisky_id: whiskyId });
+    if (res.status === 401) { location.href = '/'; return; }
+    var d = await res.json();
+    if (!res.ok) { alert(d.error || 'error'); return; }
+    if (d.completed) {
+      await loadData();
+    } else {
+      state.activeSession = { id: d.session_id, new_whisky_id: d.created_whisky.id };
+      state.newWhisky = d.created_whisky;
+      await loadData();
+      showComparison(d.created_whisky, d.next_comparison.candidate);
+    }
+  }
+
   // ── delete whisky ─────────────────────────────────────────────────────────
   async function deleteWhisky(whiskyId) {
     if (!confirm('remove this whisky?')) return;
@@ -419,6 +447,11 @@
       fetch('/auth/logout', { method: 'POST' }).then(function () { location.href = '/'; });
     });
 
+    el('searchInput').addEventListener('input', function () {
+      state.search = this.value;
+      renderList();
+    });
+
     // add modal
     el('addWhiskyBtn').addEventListener('click', openAddModal);
     el('addModalClose').addEventListener('click', closeAddModal);
@@ -459,6 +492,7 @@
     // edit modal
     el('editModalClose').addEventListener('click', closeEditModal);
     el('editCancel').addEventListener('click', closeEditModal);
+    el('editRerank').addEventListener('click', rerankWhisky);
     ['e-distillery','e-product','e-type','e-age','e-country',
      'e-where-name','e-where-city','e-where-country','e-when','e-notes'].forEach(function (id) {
       var input = el(id);

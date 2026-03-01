@@ -77,6 +77,14 @@
     }
     .filter-bar input[type="text"] { width: 80px; }
     .filter-input:focus, .filter-input:hover { border-color: var(--fg); color: var(--fg); }
+    .search-bar { margin-bottom: 10px; }
+    .search-input {
+      border: 1px solid var(--border); border-radius: 6px; padding: 5px 10px;
+      font-family: var(--font); font-size: 11px; letter-spacing: .04em; color: var(--muted);
+      background: var(--bg); outline: none; width: 220px;
+      transition: border-color 150ms, color 150ms;
+    }
+    .search-input:focus, .search-input:hover { border-color: var(--fg); color: var(--fg); }
 
     .btn-add {
       background: var(--fg); color: #fff; border: 1px solid var(--fg);
@@ -210,6 +218,7 @@
       <div class="type-filter" id="typeFilter"></div>
       <button id="addBeerBtn" class="btn-add">+ add beer</button>
     </div>
+    <div class="search-bar"><input type="text" id="searchInput" class="search-input" placeholder="search…" autocomplete="off" /></div>
     <div class="filter-bar" id="filterBar"></div>
     <div class="tbl-wrap">
       <div id="beerList"><p class="notice">loading…</p></div>
@@ -322,6 +331,7 @@
       </div>
       <p class="save-status" id="editSaveStatus"></p>
       <div class="modal-actions">
+        <button type="button" class="btn btn-rerank" id="editRerank">re-rank</button>
         <button type="button" class="btn" id="editCancel">done</button>
       </div>
     </div>

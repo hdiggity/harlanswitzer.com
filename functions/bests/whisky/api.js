@@ -604,6 +604,32 @@ async function handlePost(request, env, userId) {
     return json({ ok: true });
   }
 
+  if (action === 'rerank_whisky') {
+    const { whisky_id } = body;
+    if (!whisky_id) return json({ error: 'whisky_id required' }, 400);
+    const whisky = await env.db.prepare('SELECT * FROM bests_whiskies WHERE id = ?').bind(whisky_id).first();
+    if (!whisky) return json({ error: 'not found' }, 404);
+    const now = Math.floor(Date.now() / 1000);
+    await env.db.prepare(
+      "UPDATE bests_whisky_rank_sessions SET status = 'cancelled', updated_at = ? WHERE created_by = ? AND status = 'active'"
+    ).bind(now, userId).run();
+    if (whisky.rank_index != null) {
+      await env.db.prepare(
+        'UPDATE bests_whiskies SET rank_index = rank_index - 1, updated_at = ? WHERE type = ? AND id != ? AND rank_index > ?'
+      ).bind(now, whisky.type, whisky_id, whisky.rank_index).run();
+    }
+    await env.db.prepare('UPDATE bests_whiskies SET rank_index = NULL, score = NULL, updated_at = ? WHERE id = ?').bind(now, whisky_id).run();
+    await recomputeTypeScores(env, whisky.type);
+    const outcome = await startRankSession(env, whisky, userId);
+    if (outcome.completed) {
+      await recomputeTypeScores(env, whisky.type);
+      const updated = await env.db.prepare('SELECT * FROM bests_whiskies WHERE id = ?').bind(whisky_id).first();
+      return json({ created_whisky: updated, completed: true });
+    }
+    const updated = await env.db.prepare('SELECT * FROM bests_whiskies WHERE id = ?').bind(whisky_id).first();
+    return json({ created_whisky: updated, session_id: outcome.session_id, next_comparison: { candidate: outcome.candidate } });
+  }
+
   if (action === 'export') {
     const result = await env.db.prepare('SELECT * FROM bests_whiskies ORDER BY type ASC, rank_index ASC').all();
     return json({ whiskies: result.results || [], exported_at: Math.floor(Date.now() / 1000) });

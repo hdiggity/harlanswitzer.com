@@ -2,16 +2,67 @@ import { verifySession } from '../_auth.js';
 
 // ── date helpers ─────────────────────────────────────────────────────────────
 
-// Parses "M/YY", "MM/YY", "M/YYYY", "MM/YYYY" → Unix timestamp for first of that month UTC
+const MONTH_NAMES = { jan:1,feb:2,mar:3,apr:4,may:5,jun:6,jul:7,aug:8,sep:9,oct:10,nov:11,dec:12 };
+
 function parseWhenTs(text) {
   if (!text) return null;
-  const m = String(text).trim().match(/^(\d{1,2})\/(\d{2,4})$/);
-  if (!m) return null;
-  const month = parseInt(m[1], 10);
-  let year = parseInt(m[2], 10);
-  if (year < 100) year += 2000;
-  if (month < 1 || month > 12) return null;
-  return Math.floor(Date.UTC(year, month - 1, 1) / 1000);
+  const s = String(text).trim();
+  // M/YY, MM/YY, M/YYYY, MM/YYYY
+  const m1 = s.match(/^(\d{1,2})\/(\d{2,4})$/);
+  if (m1) {
+    const month = parseInt(m1[1], 10);
+    let year = parseInt(m1[2], 10);
+    if (year < 100) year += 2000;
+    if (month < 1 || month > 12) return null;
+    return Math.floor(Date.UTC(year, month - 1, 1) / 1000);
+  }
+  // YYYY (year only)
+  const m2 = s.match(/^(\d{4})$/);
+  if (m2) return Math.floor(Date.UTC(parseInt(m2[1], 10), 0, 1) / 1000);
+  // M-YY or M-YYYY
+  const m3 = s.match(/^(\d{1,2})-(\d{2,4})$/);
+  if (m3) {
+    const month = parseInt(m3[1], 10);
+    let year = parseInt(m3[2], 10);
+    if (year < 100) year += 2000;
+    if (month < 1 || month > 12) return null;
+    return Math.floor(Date.UTC(year, month - 1, 1) / 1000);
+  }
+  // "Jan 2019", "January 2019", etc.
+  const m4 = s.match(/^([a-zA-Z]{3,9})\s+(\d{4})$/);
+  if (m4) {
+    const month = MONTH_NAMES[m4[1].toLowerCase().slice(0, 3)];
+    const year = parseInt(m4[2], 10);
+    if (month && year >= 1900 && year <= 2100) return Math.floor(Date.UTC(year, month - 1, 1) / 1000);
+  }
+  return null;
+}
+
+function normalizeWhenText(text) {
+  if (!text) return { when_text: null, when_ts: null };
+  const s = String(text).trim();
+  const ts = parseWhenTs(s);
+  if (ts === null) return { when_text: s, when_ts: null };
+  const d = new Date(ts * 1000);
+  const month = d.getUTCMonth() + 1;
+  const year = d.getUTCFullYear();
+  const normalized = /^\d{4}$/.test(s) ? s : `${month}/${year}`;
+  return { when_text: normalized, when_ts: ts };
+}
+
+async function normalizeDates(env) {
+  const rows = await env.db.prepare(
+    'SELECT id, when_text, when_ts FROM bests_beers WHERE when_text IS NOT NULL'
+  ).all();
+  const now = Math.floor(Date.now() / 1000);
+  for (const r of (rows.results || [])) {
+    const { when_text, when_ts } = normalizeWhenText(r.when_text);
+    if (when_text !== r.when_text || (when_ts !== null && when_ts !== r.when_ts)) {
+      await env.db.prepare(
+        'UPDATE bests_beers SET when_text = ?, when_ts = ?, updated_at = ? WHERE id = ?'
+      ).bind(when_text, when_ts, now, r.id).run().catch(() => {});
+    }
+  }
 }
 
 async function ensureWhenTsColumn(env) {
@@ -60,9 +111,7 @@ async function migrateWhenTs(env) {
   }
 }
 
-// Syncs country_territory and when_ts from sheet for existing beers that are missing them.
-// Only called when all beers have null country (i.e. first load after seed with bad column match).
-async function syncCountriesFromSheet(env) {
+async function syncFromSheet(env) {
   const sheetId = env.BESTS_SHEET_ID;
   if (!sheetId) return;
 
@@ -76,14 +125,19 @@ async function syncCountriesFromSheet(env) {
   const lines = csvText.split('\n').map(l => l.trim()).filter(Boolean);
   if (lines.length < 2) return;
 
-  const headers = parseCSVRow(lines[0]).map(h => h.toLowerCase().trim());
+  const headers = parseCSVRow(lines[0]).map(h => h.toLowerCase().trim().replace(/\s+/g, ' '));
   const col = name => headers.indexOf(name);
   const colFirst = (...names) => names.reduce((f, n) => f >= 0 ? f : col(n), -1);
 
-  const iBrewery = colFirst('brewery');
-  const iProduct = colFirst('product');
-  const iCountry = colFirst('country/territory', 'country / territory', 'country', 'origin', 'beer country');
-  const iWhen    = colFirst('when', 'date', 'when_text');
+  const iBrewery       = colFirst('brewery');
+  const iProduct       = colFirst('product');
+  const iCountry       = colFirst('country / territory', 'country/territory', 'country', 'origin', 'beer country');
+  const iSubType       = colFirst('sub-type', 'subtype', 'sub_type');
+  const iWhereName     = colFirst('where (name)', 'where name', 'venue');
+  const iWhereCityState = colFirst('where (city/state)', 'where (city)', 'city/state', 'city');
+  const iWhereCountry  = colFirst('where (country)', 'where country');
+  const iWhen          = colFirst('when', 'date');
+  const iNotes         = colFirst('event notes', 'notes');
 
   if (iBrewery < 0 || iProduct < 0) return;
 
@@ -94,20 +148,32 @@ async function syncCountriesFromSheet(env) {
     const product = (cols[iProduct] || '').trim();
     if (!brewery || !product) continue;
 
-    const country  = iCountry >= 0 ? (cols[iCountry] || '').trim() || null : null;
-    const whenText = iWhen >= 0    ? (cols[iWhen]    || '').trim() || null : null;
-    const whenTs   = parseWhenTs(whenText);
+    const v = idx => idx >= 0 ? (cols[idx] || '').trim() || null : null;
+    const country        = v(iCountry);
+    const subType        = v(iSubType);
+    const whereName      = v(iWhereName);
+    const whereCityState = v(iWhereCityState);
+    const whereCountry   = v(iWhereCountry);
+    const whenText       = v(iWhen);
+    const whenTs         = parseWhenTs(whenText);
+    const notes          = v(iNotes);
 
-    if (country) {
-      await env.db.prepare(
-        'UPDATE bests_beers SET country_territory = ?, updated_at = ? WHERE LOWER(brewery) = LOWER(?) AND LOWER(product) = LOWER(?) AND country_territory IS NULL'
-      ).bind(country, now, brewery, product).run();
-    }
-    if (whenTs !== null) {
-      await env.db.prepare(
-        'UPDATE bests_beers SET when_ts = ?, updated_at = ? WHERE LOWER(brewery) = LOWER(?) AND LOWER(product) = LOWER(?) AND when_ts IS NULL'
-      ).bind(whenTs, now, brewery, product).run();
-    }
+    await env.db.prepare(`
+      UPDATE bests_beers SET
+        country_territory = COALESCE(country_territory, ?),
+        sub_type          = COALESCE(sub_type, ?),
+        where_name        = COALESCE(where_name, ?),
+        where_city_state  = COALESCE(where_city_state, ?),
+        where_country     = COALESCE(where_country, ?),
+        when_text         = COALESCE(when_text, ?),
+        when_ts           = COALESCE(when_ts, ?),
+        event_notes       = COALESCE(event_notes, ?),
+        updated_at        = ?
+      WHERE LOWER(brewery) = LOWER(?) AND LOWER(product) = LOWER(?)
+    `).bind(
+      country, subType, whereName, whereCityState, whereCountry,
+      whenText, whenTs, notes, now, brewery, product
+    ).run().catch(() => {});
   }
 }
 
@@ -335,13 +401,11 @@ async function handleGet(env, userId) {
   if ((countRow?.cnt ?? 0) === 0) {
     await seedFromSheet(env, userId);
   } else {
-    // migrate when_ts for existing records
-    await migrateWhenTs(env);
-    // sync country from sheet if all beers are missing it
-    const withCountry = await env.db.prepare(
-      'SELECT COUNT(*) AS cnt FROM bests_beers WHERE country_territory IS NOT NULL'
+    const missingRow = await env.db.prepare(
+      'SELECT COUNT(*) AS cnt FROM bests_beers WHERE country_territory IS NULL OR when_ts IS NULL'
     ).first();
-    if ((withCountry?.cnt ?? 0) === 0) await syncCountriesFromSheet(env);
+    if ((missingRow?.cnt ?? 0) > 0) await syncFromSheet(env);
+    await normalizeDates(env);
   }
 
   const [beersResult, sessionRow] = await Promise.all([
@@ -480,6 +544,32 @@ async function handlePost(request, env, userId) {
     }
     await recomputeTypeScores(env, beer.type);
     return json({ ok: true });
+  }
+
+  if (action === 'rerank_beer') {
+    const { beer_id } = body;
+    if (!beer_id) return json({ error: 'beer_id required' }, 400);
+    const beer = await env.db.prepare('SELECT * FROM bests_beers WHERE id = ?').bind(beer_id).first();
+    if (!beer) return json({ error: 'not found' }, 404);
+    const now = Math.floor(Date.now() / 1000);
+    await env.db.prepare(
+      "UPDATE bests_rank_sessions SET status = 'cancelled', updated_at = ? WHERE created_by = ? AND status = 'active'"
+    ).bind(now, userId).run();
+    if (beer.rank_index != null) {
+      await env.db.prepare(
+        'UPDATE bests_beers SET rank_index = rank_index - 1, updated_at = ? WHERE type = ? AND id != ? AND rank_index > ?'
+      ).bind(now, beer.type, beer_id, beer.rank_index).run();
+    }
+    await env.db.prepare('UPDATE bests_beers SET rank_index = NULL, score = NULL, updated_at = ? WHERE id = ?').bind(now, beer_id).run();
+    await recomputeTypeScores(env, beer.type);
+    const outcome = await startRankSession(env, beer, userId);
+    if (outcome.completed) {
+      await recomputeTypeScores(env, beer.type);
+      const updated = await env.db.prepare('SELECT * FROM bests_beers WHERE id = ?').bind(beer_id).first();
+      return json({ created_beer: updated, completed: true });
+    }
+    const updated = await env.db.prepare('SELECT * FROM bests_beers WHERE id = ?').bind(beer_id).first();
+    return json({ created_beer: updated, session_id: outcome.session_id, next_comparison: { candidate: outcome.candidate } });
   }
 
   if (action === 'export') {
