@@ -203,19 +203,24 @@
     }
 
     var html = '<table><thead><tr>' +
-      '<th>username</th><th>created</th><th>sessions</th><th></th>' +
+      '<th>username</th><th>created</th><th>admin</th><th>sessions</th><th></th>' +
       '</tr></thead><tbody>';
 
     users.forEach(function (u) {
-      var isSelf = u.id === currentUserId;
+      var isSelf    = u.id === currentUserId;
       var sessCount = u.sessions ? u.sessions.length : 0;
-      var sessBtn = sessCount > 0
+      var sessBtn   = sessCount > 0
         ? '<button class="btn-session" data-uid="' + esc(u.id) + '">' + sessCount + '</button>'
         : '<span class="no-sessions">0</span>';
+      var adminToggle = u.is_admin
+        ? '<button class="btn btn-danger" data-action="unadmin" data-id="' + esc(u.id) + '" data-name="' + esc(u.username) + '"' +
+            (isSelf ? ' disabled title="cannot remove your own admin"' : '') + '>remove admin</button>'
+        : '<button class="btn" data-action="mkadmin" data-id="' + esc(u.id) + '" data-name="' + esc(u.username) + '">make admin</button>';
 
       html += '<tr>' +
         '<td>' + esc(u.username) + (isSelf ? ' <span style="font-size:10px;color:var(--muted)">(you)</span>' : '') + '</td>' +
         '<td>' + esc(fmtDate(u.created_at)) + '</td>' +
+        '<td>' + adminToggle + '</td>' +
         '<td>' + sessBtn + '</td>' +
         '<td><div class="actions">' +
           '<button class="btn" data-action="pw" data-id="' + esc(u.id) + '" data-name="' + esc(u.username) + '">set password</button>' +
@@ -234,6 +239,22 @@
         var uid = Number(btn.dataset.uid);
         var user = users.find(function (u) { return u.id === uid; });
         if (user) openSessModal(user);
+      });
+    });
+
+    wrap.querySelectorAll('[data-action="mkadmin"],[data-action="unadmin"]').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        var makeAdmin = btn.dataset.action === 'mkadmin';
+        var msg = makeAdmin
+          ? 'make "' + btn.dataset.name + '" an admin?'
+          : 'remove admin from "' + btn.dataset.name + '"?';
+        if (!confirm(msg)) return;
+        post({ action: 'set_admin', user_id: Number(btn.dataset.id), is_admin: makeAdmin ? 1 : 0 })
+          .then(function (res) {
+            if (res.ok) load();
+            else alert(res.d.error || 'error');
+          })
+          .catch(function () { alert('network error'); });
       });
     });
 

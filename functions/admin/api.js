@@ -179,6 +179,13 @@ export async function onRequestGet(context) {
     });
   }
 
+  const caller = await env.db.prepare('SELECT is_admin FROM users WHERE id = ?').bind(session.user_id).first();
+  if (!caller?.is_admin) {
+    return new Response(JSON.stringify({ error: 'forbidden' }), {
+      status: 403, headers: { 'Content-Type': 'application/json' },
+    });
+  }
+
   const url   = new URL(request.url);
   const hours = Math.min(Math.max(parseInt(url.searchParams.get('hours') || '24', 10), 1), 720);
   const windowStart = Math.floor(Date.now() / 1000) - hours * 3600;

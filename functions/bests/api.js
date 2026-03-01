@@ -500,8 +500,10 @@ export async function onRequest(context) {
   const session = await verifySession(request, env);
   if (!session) return json({ error: 'unauthorized' }, 401);
 
-  const user = await env.db.prepare('SELECT id, username FROM users WHERE id = ?').bind(session.user_id).first();
+  const user = await env.db.prepare('SELECT id, username, is_admin FROM users WHERE id = ?').bind(session.user_id).first();
   if (!user) return json({ error: 'unauthorized' }, 401);
+
+  if (!user.is_admin) return json({ error: 'forbidden' }, 403);
 
   if (!isAllowed(user.username, env)) return json({ error: 'forbidden' }, 403);
 

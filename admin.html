@@ -107,11 +107,14 @@
 
   <div class="hub">
     <span class="hub-greeting" id="welcomeMsg">welcome</span>
-    <nav class="hub-nav">
+    <nav class="hub-nav" id="hubNav" style="display:none">
       <a href="/stats.html" class="hub-link">stats</a>
       <a href="/users.html" class="hub-link">users</a>
       <a href="/bests" class="hub-link">bests</a>
     </nav>
+    <p id="noAccess" style="display:none;font-size:12px;color:var(--muted);letter-spacing:.06em">
+      no sections available yet
+    </p>
   </div>
 
   <script>
@@ -122,6 +125,11 @@
           if (!d.loggedIn) { location.href = '/'; return; }
           if (d.username) {
             document.getElementById('welcomeMsg').textContent = 'welcome, ' + d.username;
+          }
+          if (d.is_admin) {
+            document.getElementById('hubNav').style.display = '';
+          } else {
+            document.getElementById('noAccess').style.display = '';
           }
         })
         .catch(function () { location.href = '/'; });

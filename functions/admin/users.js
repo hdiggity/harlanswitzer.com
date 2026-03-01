@@ -7,6 +7,9 @@ export async function onRequest(context) {
   if (!session) return json({ error: 'unauthorized' }, 401);
   if (!env.db)  return json({ error: 'server error' }, 500);
 
+  const caller = await env.db.prepare('SELECT is_admin FROM users WHERE id = ?').bind(session.user_id).first();
+  if (!caller?.is_admin) return json({ error: 'forbidden' }, 403);
+
   const method = request.method.toUpperCase();
 
   if (method === 'GET')    return handleGet(env);
@@ -20,7 +23,7 @@ export async function onRequest(context) {
 async function handleGet(env) {
   const now = Math.floor(Date.now() / 1000);
   const [users, sessions] = await Promise.all([
-    env.db.prepare('SELECT id, username, created_at FROM users ORDER BY created_at ASC').all(),
+    env.db.prepare('SELECT id, username, created_at, is_admin FROM users ORDER BY created_at ASC').all(),
     env.db.prepare(`
       SELECT id, user_id, created_at, expires_at
       FROM sessions
@@ -39,6 +42,7 @@ async function handleGet(env) {
     id:         u.id,
     username:   u.username,
     created_at: u.created_at,
+    is_admin:   u.is_admin,
     sessions:   sessMap.get(u.id) || [],
   }));
 
@@ -73,6 +77,14 @@ async function handlePost(request, env, callerSession) {
     const { session_id } = body;
     if (!session_id) return json({ error: 'session_id required' }, 400);
     await env.db.prepare('UPDATE sessions SET revoked = 1 WHERE id = ?').bind(session_id).run();
+    return json({ ok: true });
+  }
+
+  if (action === 'set_admin') {
+    const { user_id, is_admin } = body;
+    if (user_id == null || is_admin == null) return json({ error: 'user_id and is_admin required' }, 400);
+    if (user_id === callerSession.user_id && !is_admin) return json({ error: 'cannot remove your own admin' }, 400);
+    await env.db.prepare('UPDATE users SET is_admin = ? WHERE id = ?').bind(is_admin ? 1 : 0, user_id).run();
     return json({ ok: true });
   }
 
