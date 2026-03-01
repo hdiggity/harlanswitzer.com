@@ -1,0 +1,199 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>stats — harlanswitzer.com</title>
+  <style>
+    :root {
+      --bg: #ffffff;
+      --fg: #6d28d9;
+      --muted: rgba(109,40,217,.45);
+      --border: rgba(109,40,217,.12);
+      --row-alt: rgba(109,40,217,.025);
+      --card-bg: rgba(109,40,217,.04);
+      --font: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body { height: 100%; }
+    body {
+      font-family: var(--font);
+      background: var(--bg);
+      color: var(--fg);
+      font-size: 14px;
+      line-height: 1.5;
+    }
+
+    .hd {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 16px 28px;
+      border-bottom: 1px solid var(--border);
+    }
+    .hd-left { display: flex; flex-direction: column; gap: 2px; }
+    .hd-site {
+      font-size: 11px;
+      letter-spacing: .12em;
+      text-transform: uppercase;
+      color: var(--muted);
+    }
+    .hd-title {
+      font-size: 18px;
+      font-weight: 700;
+      letter-spacing: .02em;
+      text-transform: uppercase;
+    }
+    .hd-right { display: flex; align-items: center; gap: 12px; }
+    .hd-btn {
+      background: none;
+      border: 1px solid var(--border);
+      color: var(--muted);
+      font-size: 11px;
+      letter-spacing: .1em;
+      text-transform: uppercase;
+      padding: 6px 14px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-family: var(--font);
+      text-decoration: none;
+      display: inline-flex;
+      align-items: center;
+      transition: color 150ms, border-color 150ms;
+    }
+    .hd-btn:hover { color: var(--fg); border-color: var(--fg); }
+
+    .summary {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 12px;
+      padding: 24px 28px 0;
+    }
+    @media (max-width: 640px) {
+      .summary { grid-template-columns: repeat(2, 1fr); }
+    }
+    .card {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 16px 18px;
+    }
+    .card-label {
+      font-size: 10px;
+      letter-spacing: .14em;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-bottom: 6px;
+    }
+    .card-value {
+      font-size: 28px;
+      font-weight: 800;
+      letter-spacing: -.01em;
+      line-height: 1;
+    }
+
+    .tabs {
+      display: flex;
+      gap: 0;
+      padding: 20px 28px 0;
+      border-bottom: 1px solid var(--border);
+      overflow-x: auto;
+    }
+    .tab {
+      font-size: 11px;
+      letter-spacing: .1em;
+      text-transform: uppercase;
+      color: var(--muted);
+      padding: 8px 16px;
+      cursor: pointer;
+      border-bottom: 2px solid transparent;
+      margin-bottom: -1px;
+      white-space: nowrap;
+      transition: color 150ms, border-color 150ms;
+      user-select: none;
+    }
+    .tab:hover { color: var(--fg); }
+    .tab.active { color: var(--fg); border-bottom-color: var(--fg); }
+
+    .panels { padding: 24px 28px 48px; }
+    .panel { display: none; }
+    .panel.active { display: block; }
+
+    .tbl-wrap { overflow-x: auto; }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 12px;
+    }
+    th {
+      text-align: left;
+      padding: 7px 12px;
+      font-size: 10px;
+      letter-spacing: .1em;
+      text-transform: uppercase;
+      color: var(--muted);
+      border-bottom: 1px solid var(--border);
+      white-space: nowrap;
+    }
+    td {
+      padding: 7px 12px;
+      border-bottom: 1px solid var(--border);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      max-width: 360px;
+    }
+    tr:last-child td { border-bottom: none; }
+    tr:nth-child(even) td { background: var(--row-alt); }
+
+    .bar-list { display: flex; flex-direction: column; gap: 8px; }
+    .bar-row { display: flex; align-items: center; gap: 10px; font-size: 12px; }
+    .bar-label { width: 220px; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex-shrink: 0; }
+    .bar-track { flex: 1; height: 6px; background: var(--border); border-radius: 999px; overflow: hidden; }
+    .bar-fill { height: 100%; background: var(--fg); border-radius: 999px; opacity: .5; transition: width 400ms; }
+    .bar-count { width: 36px; text-align: right; color: var(--muted); flex-shrink: 0; }
+
+    .empty { color: var(--muted); font-size: 12px; padding: 12px 0; }
+
+    .s2 { color: #16a34a; }
+    .s3 { color: #d97706; }
+    .s4, .s5 { color: #dc2626; }
+  </style>
+</head>
+<body>
+  <header class="hd">
+    <div class="hd-left">
+      <span class="hd-site">harlanswitzer.com</span>
+      <span class="hd-title" id="welcomeMsg">stats</span>
+    </div>
+    <div class="hd-right">
+      <a href="/admin.html" class="hd-btn">home</a>
+      <a href="/users.html" class="hd-btn">users</a>
+      <button id="logoutBtn" class="hd-btn">logout</button>
+    </div>
+  </header>
+
+  <div class="summary">
+    <div class="card"><div class="card-label">unique visitors (24h)</div><div class="card-value" id="statVisitors">—</div></div>
+    <div class="card"><div class="card-label">sessions (24h)</div><div class="card-value" id="statSessions">—</div></div>
+    <div class="card"><div class="card-label">real pageviews (24h)</div><div class="card-value" id="statPageviews">—</div></div>
+    <div class="card"><div class="card-label">bot requests (24h)</div><div class="card-value" id="statBots">—</div></div>
+  </div>
+
+  <nav class="tabs">
+    <div class="tab active" data-tab="overview">overview</div>
+    <div class="tab" data-tab="diagnostics">diagnostics</div>
+    <div class="tab" data-tab="sessions">sessions</div>
+    <div class="tab" data-tab="requests">requests</div>
+  </nav>
+
+  <div class="panels">
+    <div class="panel active" id="panel-overview"><div id="cnt-overview" class="empty">loading…</div></div>
+    <div class="panel" id="panel-diagnostics"><div id="cnt-diagnostics" class="empty">loading…</div></div>
+    <div class="panel" id="panel-sessions"><div id="cnt-sessions" class="empty">loading…</div></div>
+    <div class="panel" id="panel-requests"><div id="cnt-requests" class="empty">loading…</div></div>
+  </div>
+
+  <script src="./js/stats.js?v=dev"></script>
+</body>
+</html>

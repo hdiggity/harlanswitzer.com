@@ -1,9 +1,18 @@
 const SKIP_PATHS = ['/collect', '/auth/', '/admin/api'];
+const BOT_SCORE_THRESHOLD = 30; // below this = block (1=bot, 99=human)
 
 export async function onRequest(context) {
   const { request, env, next, waitUntil } = context;
   const url = new URL(request.url);
   const path = url.pathname;
+
+  // block low bot-score traffic — skip /auth/ so login is never blocked
+  if (!path.startsWith('/auth/')) {
+    const score = request.cf?.botManagement?.score;
+    if (score !== undefined && score < BOT_SCORE_THRESHOLD) {
+      return new Response('Forbidden', { status: 403 });
+    }
+  }
 
   // skip logging for these paths to avoid noise/loops
   const skip = SKIP_PATHS.some(p => path === p || path.startsWith(p));
@@ -28,13 +37,13 @@ export async function onRequest(context) {
     return new Response(response.body, { status: response.status, headers });
   }
 
-  if (!skip && !selfExclude && env.DB) {
+  if (!skip && !selfExclude && env.db) {
     const cf = request.cf || {};
     const ip = request.headers.get('cf-connecting-ip') || '';
     const ipHash = ip ? await sha256Hex(env.IP_HASH_SALT + ip) : '';
 
     waitUntil(
-      env.DB.prepare(
+      env.db.prepare(
         `INSERT INTO requests (ts, host, path, method, status, country, asn, colo, user_agent, referer, ray, bot_score, verified_bot, ip_hash)
          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
       ).bind(

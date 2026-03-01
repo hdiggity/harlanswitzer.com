@@ -1,8 +1,6 @@
 (function () {
-  // ── state ─────────────────────────────────────────────────────────────────
   var hours = Number(localStorage.getItem('admin_hours')) || 24;
 
-  // ── helpers ───────────────────────────────────────────────────────────────
   function el(id) { return document.getElementById(id); }
 
   function esc(s) {
@@ -64,33 +62,29 @@
     }).join('') + '</div>';
   }
 
-  // ── inject extra CSS ───────────────────────────────────────────────────────
-  function injectCSS() {
+  // ── init CSS + shell ──────────────────────────────────────────────────────
+
+  function setup() {
+    // inject dynamic styles
     var s = document.createElement('style');
     s.textContent = [
-      // override the hardcoded 4-column summary grid
       '.summary { display: block !important; padding: 20px 28px !important; }',
-      // classification summary table
       '.cls-table { width: 100%; border-collapse: collapse; }',
       '.cls-table th { font-size: 10px; letter-spacing: .12em; text-transform: uppercase; color: var(--muted); padding: 4px 20px 10px; text-align: right; font-weight: 500; white-space: nowrap; }',
       '.cls-table th:first-child { text-align: left; padding-left: 0; }',
       '.cls-table td { padding: 10px 20px; text-align: right; font-size: 24px; font-weight: 800; letter-spacing: -.02em; line-height: 1; }',
       '.cls-table td:first-child { text-align: left; font-size: 13px; font-weight: 400; letter-spacing: 0; vertical-align: middle; padding-left: 0; }',
       '.cls-table tr + tr td { border-top: 1px solid var(--border); }',
-      // badges
       '.badge { display: inline-block; font-size: 10px; letter-spacing: .08em; text-transform: uppercase; padding: 3px 8px; border-radius: 99px; font-weight: 700; }',
       '.badge-human     { background: rgba(22,163,74,.12); color: #16a34a; }',
       '.badge-automated { background: rgba(220,38,38,.10); color: #dc2626; }',
       '.badge-unknown   { background: rgba(109,40,217,.10); color: var(--muted); }',
-      // score colors in sessions table
       '.score-pos { color: #16a34a; font-weight: 700; }',
       '.score-neg { color: #dc2626; font-weight: 700; }',
-      // time window pills
       '.win-pills { display: flex; gap: 4px; margin-right: 4px; }',
       '.win-pill { font-size: 11px; letter-spacing: .07em; text-transform: uppercase; padding: 5px 10px; border-radius: 6px; cursor: pointer; border: 1px solid var(--border); color: var(--muted); background: none; font-family: var(--font); transition: color 150ms, background 150ms, border-color 150ms; }',
       '.win-pill:hover { color: var(--fg); border-color: var(--fg); }',
       '.win-pill.active { color: #fff; background: var(--fg); border-color: var(--fg); }',
-      // panel layout helpers
       '.two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 28px; }',
       '@media (max-width: 720px) { .two-col { grid-template-columns: 1fr; } }',
       '.ptitle { font-size: 10px; letter-spacing: .12em; text-transform: uppercase; color: var(--muted); margin-bottom: 12px; font-weight: 600; }',
@@ -99,13 +93,8 @@
       '.loading { color: var(--muted); font-size: 12px; padding: 32px 0; text-align: center; letter-spacing: .04em; }',
     ].join('\n');
     document.head.appendChild(s);
-  }
 
-  // ── build static DOM shell ─────────────────────────────────────────────────
-  function buildShell() {
-    injectCSS();
-
-    // Time window pills — inserted before the logout button
+    // time window pills
     var hdRight = document.querySelector('.hd-right');
     if (hdRight) {
       var pills = document.createElement('div');
@@ -129,7 +118,7 @@
       hdRight.insertBefore(pills, hdRight.firstChild);
     }
 
-    // Summary: replace 4-card grid with classification breakdown table
+    // classification summary table
     var summary = document.querySelector('.summary');
     if (summary) {
       summary.innerHTML =
@@ -148,12 +137,9 @@
         '</tbody></table>';
     }
 
-    // Tabs
+    // tab click handlers
     var nav = document.querySelector('.tabs');
     if (nav) {
-      nav.innerHTML = ['overview', 'diagnostics', 'sessions', 'requests'].map(function (t, i) {
-        return '<div class="tab' + (i === 0 ? ' active' : '') + '" data-tab="' + t + '">' + t + '</div>';
-      }).join('');
       nav.querySelectorAll('.tab').forEach(function (tab) {
         tab.addEventListener('click', function () {
           nav.querySelectorAll('.tab').forEach(function (t) { t.classList.remove('active'); });
@@ -164,19 +150,10 @@
         });
       });
     }
-
-    // Panels
-    var panels = document.querySelector('.panels');
-    if (panels) {
-      panels.innerHTML = ['overview', 'diagnostics', 'sessions', 'requests'].map(function (t, i) {
-        return '<div class="panel' + (i === 0 ? ' active' : '') + '" id="panel-' + t + '">' +
-          '<div id="cnt-' + t + '" class="loading">loading…</div>' +
-          '</div>';
-      }).join('');
-    }
   }
 
-  // ── render panels ──────────────────────────────────────────────────────────
+  // ── render ────────────────────────────────────────────────────────────────
+
   function setCard(id, value) {
     var e = el(id);
     if (e) e.textContent = num(value);
@@ -190,7 +167,7 @@
       : '';
     c.innerHTML = notice +
       '<div class="two-col">' +
-      '<div class="psec"><p class="ptitle">top countries — human visitors</p>' +
+      '<div class="psec"><p class="ptitle">top countries — human</p>' +
       bars(d.top_countries_human, 'country', 'count') + '</div>' +
       '<div class="psec"><p class="ptitle">top countries — automated</p>' +
       bars(d.top_countries_automated, 'country', 'count') + '</div>' +
@@ -213,7 +190,7 @@
       '<div class="two-col">' +
       '<div class="psec"><p class="ptitle">suspicious paths — automated</p>' +
       bars(d.top_suspicious_paths, 'path', 'count') + '</div>' +
-      '<div class="psec"><p class="ptitle">automated user agents</p>' + agents + '</div>' +
+      '<div class="psec"><p class="ptitle">automated agents</p>' + agents + '</div>' +
       '</div>';
   }
 
@@ -257,7 +234,8 @@
     ) + '</div>';
   }
 
-  // ── data loading ───────────────────────────────────────────────────────────
+  // ── data load ─────────────────────────────────────────────────────────────
+
   async function reload() {
     ['overview', 'diagnostics', 'sessions', 'requests'].forEach(function (t) {
       var c = el('cnt-' + t);
@@ -274,8 +252,6 @@
     }
     var d = await res.json();
 
-    if (d.username) el('welcomeMsg').textContent = 'welcome, ' + d.username;
-
     ['human', 'automated', 'unknown'].forEach(function (cls) {
       var s = (d.summary && d.summary[cls]) || {};
       setCard('stat-' + cls + '-v', s.visitors);
@@ -291,6 +267,7 @@
   }
 
   // ── init ──────────────────────────────────────────────────────────────────
+
   async function init() {
     var meRes = await fetch('/auth/me');
     var me    = await meRes.json();
@@ -300,7 +277,7 @@
       fetch('/auth/logout', { method: 'POST' }).then(function () { location.href = '/'; });
     });
 
-    buildShell();
+    setup();
     reload();
   }
 

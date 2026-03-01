@@ -93,20 +93,24 @@ body{
   backdrop-filter: blur(10px);
 }
 
-.login-link{
+.auth-corner{
   position:absolute;
   bottom:18px;
   left:20px;
+  display:flex;
+  gap:14px;
+  z-index:10;
+}
+.auth-link{
   color: rgba(109,40,217,.4);
   font-size:11px;
   letter-spacing:.12em;
   text-transform:uppercase;
   text-decoration:none;
   line-height:1;
-  z-index:10;
   transition: color 200ms;
 }
-.login-link:hover{
+.auth-link:hover{
   color: rgba(109,40,217,.9);
 }
 

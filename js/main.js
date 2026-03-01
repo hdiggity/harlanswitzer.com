@@ -2,7 +2,6 @@
 import { clamp, normPointer, setGlowVars } from "./utils.js";
 import { EFFECTS, effectByIndex } from "./state.js";
 
-import { kineticType } from "./effects/kineticType.js";
 import { spotlightReveal } from "./effects/spotlightReveal.js";
 import { signalUnderline } from "./effects/signalUnderline.js";
 import { gridMagnet } from "./effects/gridMagnet.js";
@@ -99,30 +98,13 @@ function tick(t){
 
   resetTransforms();
 
-  if(mode.key === "kinetic") kineticType(ctx, pointer);
   if(mode.key === "spotlight") spotlightReveal(ctx, pointer);
   if(mode.key === "grid") gridMagnet(ctx, pointer);
-  if(mode.key === "glass"){
-    kineticType(ctx, pointer);
-    glassCard(ctx, pointer);
-  }
-  if(mode.key === "monogram"){
-    kineticType(ctx, pointer);
-    monogramParallax(ctx, pointer);
-  }
+  if(mode.key === "glass") glassCard(ctx, pointer);
+  if(mode.key === "monogram") monogramParallax(ctx, pointer);
   if(mode.key === "print") printVibe(ctx, pointer);
-  if(mode.key === "signal"){
-    kineticType(ctx, pointer);
-    signalUnderline(underlineState, pointer);
-  }
-  if(mode.key === "split"){
-    kineticType(ctx, pointer);
-    const nx = (pointer.x - 0.5) * 2;
-    const ny = (pointer.y - 0.5) * 2;
-    nameEl.style.transform = `translate3d(${(nx*18).toFixed(2)}px, ${(ny*12).toFixed(2)}px, 0px)`;
-  } else {
-    nameEl.style.transform = "";
-  }
+  if(mode.key === "signal") signalUnderline(underlineState, pointer);
+  nameEl.style.transform = "";
 
   // idle breathing if no movement recently
   if((t - lastMoveAt) > 850){

@@ -1,0 +1,363 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>beer — bests — harlanswitzer.com</title>
+  <style>
+    :root {
+      --bg: #ffffff;
+      --fg: #6d28d9;
+      --muted: rgba(109,40,217,.45);
+      --border: rgba(109,40,217,.12);
+      --row-alt: rgba(109,40,217,.025);
+      --card-bg: rgba(109,40,217,.04);
+      --font: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body { height: 100%; }
+    body { font-family: var(--font); background: var(--bg); color: var(--fg); font-size: 14px; line-height: 1.5; }
+
+    /* header */
+    .hd {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 16px 28px; border-bottom: 1px solid var(--border);
+    }
+    .hd-left { display: flex; flex-direction: column; gap: 2px; }
+    .hd-site { font-size: 11px; letter-spacing: .12em; text-transform: uppercase; color: var(--muted); }
+    .hd-title { font-size: 18px; font-weight: 700; letter-spacing: .02em; text-transform: uppercase; }
+    .hd-right { display: flex; align-items: center; gap: 12px; }
+    .hd-btn {
+      background: none; border: 1px solid var(--border); color: var(--muted);
+      font-size: 11px; letter-spacing: .1em; text-transform: uppercase;
+      padding: 6px 14px; border-radius: 6px; cursor: pointer; font-family: var(--font);
+      text-decoration: none; display: inline-flex; align-items: center;
+      transition: color 150ms, border-color 150ms;
+    }
+    .hd-btn:hover { color: var(--fg); border-color: var(--fg); }
+
+    /* content */
+    .content { padding: 24px 28px 80px; }
+
+    /* toolbar */
+    .toolbar {
+      display: flex; align-items: center; justify-content: space-between;
+      gap: 12px; margin-bottom: 16px; flex-wrap: wrap;
+    }
+    .type-filter {
+      display: flex; gap: 6px; overflow-x: auto; flex: 1; padding-bottom: 2px;
+    }
+    .type-pill {
+      background: none; border: 1px solid var(--border); color: var(--muted);
+      font-size: 10px; letter-spacing: .1em; text-transform: uppercase;
+      padding: 5px 12px; border-radius: 99px; cursor: pointer; font-family: var(--font);
+      white-space: nowrap; transition: color 150ms, border-color 150ms, background 150ms;
+      flex-shrink: 0;
+    }
+    .type-pill:hover { color: var(--fg); border-color: var(--fg); }
+    .type-pill.active { color: #fff; background: var(--fg); border-color: var(--fg); }
+
+    /* filter bar */
+    .filter-bar {
+      display: flex; gap: 8px; margin-bottom: 16px; flex-wrap: wrap;
+    }
+    .filter-select {
+      border: 1px solid var(--border); border-radius: 6px; padding: 5px 10px;
+      font-family: var(--font); font-size: 11px; letter-spacing: .04em; color: var(--muted);
+      background: var(--bg); outline: none; cursor: pointer;
+      transition: border-color 150ms, color 150ms;
+    }
+    .filter-select:focus, .filter-select:hover { border-color: var(--fg); color: var(--fg); }
+    .filter-input {
+      border: 1px solid var(--border); border-radius: 6px; padding: 5px 10px;
+      font-family: var(--font); font-size: 11px; letter-spacing: .04em; color: var(--muted);
+      background: var(--bg); outline: none; width: 130px;
+      transition: border-color 150ms, color 150ms;
+    }
+    .filter-input:focus, .filter-input:hover { border-color: var(--fg); color: var(--fg); }
+
+    .btn-add {
+      background: var(--fg); color: #fff; border: 1px solid var(--fg);
+      font-size: 11px; letter-spacing: .1em; text-transform: uppercase;
+      padding: 7px 18px; border-radius: 6px; cursor: pointer; font-family: var(--font);
+      white-space: nowrap; transition: opacity 150ms; flex-shrink: 0;
+    }
+    .btn-add:hover { opacity: .85; }
+
+    /* table */
+    .tbl-wrap { overflow-x: auto; }
+    table { width: 100%; border-collapse: collapse; font-size: 13px; }
+    th {
+      text-align: left; padding: 7px 12px; font-size: 10px; letter-spacing: .1em;
+      text-transform: uppercase; color: var(--muted); border-bottom: 1px solid var(--border);
+      white-space: nowrap; user-select: none;
+    }
+    th.sortable { cursor: pointer; }
+    th.sortable:hover { color: var(--fg); }
+    th.sort-active { color: var(--fg); }
+    th .sort-arrow { margin-left: 4px; font-size: 9px; opacity: .7; }
+    td { padding: 9px 12px; border-bottom: 1px solid var(--border); vertical-align: middle; }
+    tr:last-child td { border-bottom: none; }
+    tr:nth-child(even) td { background: var(--row-alt); }
+
+    .score-val { font-weight: 700; }
+    .score-null { color: var(--muted); }
+    .cell-sub { font-size: 11px; color: var(--muted); }
+
+    .row-actions { display: flex; gap: 4px; white-space: nowrap; align-items: center; justify-content: flex-end; }
+    td:last-child { width: 1px; white-space: nowrap; }
+    .btn-edit, .btn-remove {
+      background: none; border: 1px solid transparent; color: var(--muted);
+      font-size: 11px; padding: 3px 8px; border-radius: 5px; cursor: pointer;
+      font-family: var(--font); letter-spacing: .04em;
+      transition: color 150ms, border-color 150ms;
+    }
+    .btn-edit:hover  { color: var(--fg); border-color: var(--fg); }
+    .btn-remove:hover { color: #dc2626; border-color: #dc2626; }
+    .save-status { font-size: 11px; color: var(--muted); margin-top: 6px; min-height: 16px; text-align: right; }
+
+    .notice { font-size: 12px; color: var(--muted); padding: 32px 0; text-align: center; }
+
+    /* modals */
+    .modal-backdrop {
+      position: fixed; inset: 0; background: rgba(0,0,0,.35);
+      display: flex; align-items: center; justify-content: center;
+      z-index: 100; padding: 16px;
+    }
+    .modal-backdrop[hidden] { display: none; }
+    .modal-box {
+      background: var(--bg); border: 1px solid var(--border); border-radius: 12px;
+      padding: 28px 32px; width: 100%; max-width: 480px;
+      max-height: 90vh; overflow-y: auto; position: relative;
+    }
+    .modal-title {
+      font-size: 10px; font-weight: 700; letter-spacing: .14em; text-transform: uppercase;
+      color: var(--muted); margin-bottom: 20px;
+    }
+    .modal-close {
+      position: absolute; top: 14px; right: 16px;
+      background: none; border: none; font-size: 20px; color: var(--muted);
+      cursor: pointer; line-height: 1;
+    }
+    .modal-close:hover { color: var(--fg); }
+
+    /* add beer form */
+    .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px 16px; }
+    .form-grid .full { grid-column: 1 / -1; }
+    .field { display: flex; flex-direction: column; gap: 4px; }
+    label { font-size: 10px; letter-spacing: .1em; text-transform: uppercase; color: var(--muted); }
+    input[type="text"], input[type="password"], textarea {
+      border: 1px solid var(--border); border-radius: 6px; padding: 8px 10px;
+      font-family: var(--font); font-size: 13px; color: var(--fg); background: var(--bg);
+      outline: none; transition: border-color 150ms; width: 100%;
+    }
+    input:focus, textarea:focus { border-color: var(--fg); }
+    textarea { resize: vertical; min-height: 60px; }
+
+    .modal-error { font-size: 12px; color: #dc2626; min-height: 16px; margin-top: 4px; }
+    .modal-actions { display: flex; gap: 8px; justify-content: flex-end; margin-top: 16px; }
+    .btn {
+      background: none; border: 1px solid var(--border); color: var(--muted);
+      font-size: 10px; letter-spacing: .08em; text-transform: uppercase;
+      padding: 6px 14px; border-radius: 6px; cursor: pointer; font-family: var(--font);
+      transition: color 150ms, border-color 150ms;
+    }
+    .btn:hover { color: var(--fg); border-color: var(--fg); }
+    .btn-primary {
+      background: var(--fg); color: #fff; border: 1px solid var(--fg);
+      font-size: 10px; letter-spacing: .1em; text-transform: uppercase;
+      padding: 7px 18px; border-radius: 6px; cursor: pointer; font-family: var(--font);
+    }
+    .btn-primary:hover { opacity: .88; }
+    .btn-primary:disabled { opacity: .5; cursor: default; }
+
+    /* comparison modal */
+    .cmp-box { max-width: 540px; }
+    .cmp-title { font-size: 10px; font-weight: 700; letter-spacing: .14em; text-transform: uppercase; color: var(--muted); margin-bottom: 6px; }
+    .cmp-sub { font-size: 12px; color: var(--muted); margin-bottom: 24px; }
+    .cmp-cards { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+    .cmp-card {
+      border: 2px solid var(--border); border-radius: 10px; padding: 20px 16px;
+      cursor: pointer; transition: border-color 150ms, background 150ms; text-align: center;
+    }
+    .cmp-card:hover { border-color: var(--fg); background: var(--card-bg); }
+    .cmp-card-label { font-size: 9px; letter-spacing: .14em; text-transform: uppercase; color: var(--muted); margin-bottom: 10px; }
+    .cmp-card-brewery { font-size: 12px; color: var(--muted); margin-bottom: 4px; }
+    .cmp-card-product { font-size: 16px; font-weight: 700; letter-spacing: .01em; }
+    .cmp-card-type { font-size: 11px; color: var(--muted); margin-top: 6px; }
+    .cmp-actions { display: flex; justify-content: center; margin-top: 20px; }
+  </style>
+</head>
+<body>
+  <header class="hd">
+    <div class="hd-left">
+      <span class="hd-site">harlanswitzer.com / bests</span>
+      <span class="hd-title">beer</span>
+    </div>
+    <div class="hd-right">
+      <a href="/bests" class="hd-btn">bests</a>
+      <a href="/admin.html" class="hd-btn">home</a>
+      <button id="logoutBtn" class="hd-btn">logout</button>
+    </div>
+  </header>
+
+  <div class="content">
+    <div class="toolbar">
+      <div class="type-filter" id="typeFilter"></div>
+      <button id="addBeerBtn" class="btn-add">+ add beer</button>
+    </div>
+    <div class="filter-bar" id="filterBar"></div>
+    <div class="tbl-wrap">
+      <div id="beerList"><p class="notice">loading…</p></div>
+    </div>
+  </div>
+
+  <!-- add beer modal -->
+  <div id="addModal" class="modal-backdrop" hidden>
+    <div class="modal-box">
+      <button class="modal-close" id="addModalClose">&times;</button>
+      <p class="modal-title">add beer</p>
+      <form id="addForm">
+        <div class="form-grid">
+          <div class="field full">
+            <label for="f-brewery">brewery *</label>
+            <input id="f-brewery" type="text" required autocomplete="off" list="dl-brewery" />
+          </div>
+          <div class="field full">
+            <label for="f-product">product *</label>
+            <input id="f-product" type="text" required autocomplete="off" />
+          </div>
+          <div class="field">
+            <label for="f-type">type *</label>
+            <input id="f-type" type="text" required autocomplete="off" list="dl-type" />
+          </div>
+          <div class="field">
+            <label for="f-sub-type">sub-type</label>
+            <input id="f-sub-type" type="text" autocomplete="off" list="dl-sub-type" />
+          </div>
+          <div class="field">
+            <label for="f-country">country/territory</label>
+            <input id="f-country" type="text" autocomplete="off" list="dl-country" />
+          </div>
+          <div class="field">
+            <label for="f-where-name">where (name)</label>
+            <input id="f-where-name" type="text" autocomplete="off" list="dl-where-name" />
+          </div>
+          <div class="field">
+            <label for="f-where-city">where (city/state)</label>
+            <input id="f-where-city" type="text" autocomplete="off" list="dl-where-city" />
+          </div>
+          <div class="field">
+            <label for="f-where-country">where (country)</label>
+            <input id="f-where-country" type="text" autocomplete="off" list="dl-where-country" />
+          </div>
+          <div class="field">
+            <label for="f-when">when</label>
+            <input id="f-when" type="text" autocomplete="off" list="dl-when" />
+          </div>
+          <div class="field full">
+            <label for="f-notes">event notes</label>
+            <textarea id="f-notes"></textarea>
+          </div>
+        </div>
+        <span class="modal-error" id="addError"></span>
+        <div class="modal-actions">
+          <button type="button" class="btn" id="addCancel">cancel</button>
+          <button type="submit" class="btn-primary" id="addSubmit">add</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- edit beer modal -->
+  <div id="editModal" class="modal-backdrop" hidden>
+    <div class="modal-box">
+      <button class="modal-close" id="editModalClose">&times;</button>
+      <p class="modal-title">edit beer</p>
+      <div class="form-grid">
+        <div class="field full">
+          <label for="e-brewery">brewery</label>
+          <input id="e-brewery" type="text" autocomplete="off" list="dl-brewery" />
+        </div>
+        <div class="field full">
+          <label for="e-product">product</label>
+          <input id="e-product" type="text" autocomplete="off" />
+        </div>
+        <div class="field">
+          <label for="e-type">type</label>
+          <input id="e-type" type="text" autocomplete="off" list="dl-type" />
+        </div>
+        <div class="field">
+          <label for="e-sub-type">sub-type</label>
+          <input id="e-sub-type" type="text" autocomplete="off" list="dl-sub-type" />
+        </div>
+        <div class="field">
+          <label for="e-country">country/territory</label>
+          <input id="e-country" type="text" autocomplete="off" list="dl-country" />
+        </div>
+        <div class="field">
+          <label for="e-where-name">where (name)</label>
+          <input id="e-where-name" type="text" autocomplete="off" list="dl-where-name" />
+        </div>
+        <div class="field">
+          <label for="e-where-city">where (city/state)</label>
+          <input id="e-where-city" type="text" autocomplete="off" list="dl-where-city" />
+        </div>
+        <div class="field">
+          <label for="e-where-country">where (country)</label>
+          <input id="e-where-country" type="text" autocomplete="off" list="dl-where-country" />
+        </div>
+        <div class="field">
+          <label for="e-when">when</label>
+          <input id="e-when" type="text" autocomplete="off" list="dl-when" />
+        </div>
+        <div class="field full">
+          <label for="e-notes">event notes</label>
+          <textarea id="e-notes"></textarea>
+        </div>
+      </div>
+      <p class="save-status" id="editSaveStatus"></p>
+      <div class="modal-actions">
+        <button type="button" class="btn" id="editCancel">done</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- comparison modal -->
+  <div id="cmpModal" class="modal-backdrop" hidden>
+    <div class="modal-box cmp-box">
+      <p class="cmp-title">this or that?</p>
+      <p class="cmp-sub">which do you prefer?</p>
+      <div class="cmp-cards">
+        <div class="cmp-card" id="cmpCardNew" role="button" tabindex="0">
+          <p class="cmp-card-label">new</p>
+          <p class="cmp-card-brewery" id="cmpNewBrewery"></p>
+          <p class="cmp-card-product" id="cmpNewProduct"></p>
+          <p class="cmp-card-type" id="cmpNewType"></p>
+        </div>
+        <div class="cmp-card" id="cmpCardCandidate" role="button" tabindex="0">
+          <p class="cmp-card-label">vs.</p>
+          <p class="cmp-card-brewery" id="cmpCandidateBrewery"></p>
+          <p class="cmp-card-product" id="cmpCandidateProduct"></p>
+          <p class="cmp-card-type" id="cmpCandidateType"></p>
+        </div>
+      </div>
+      <div class="cmp-actions">
+        <button class="btn" id="cmpCancel">cancel</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- autocomplete datalists -->
+  <datalist id="dl-brewery"></datalist>
+  <datalist id="dl-type"></datalist>
+  <datalist id="dl-sub-type"></datalist>
+  <datalist id="dl-country"></datalist>
+  <datalist id="dl-where-name"></datalist>
+  <datalist id="dl-where-city"></datalist>
+  <datalist id="dl-where-country"></datalist>
+  <datalist id="dl-when"></datalist>
+
+  <script src="../js/bests-beer.js?v=dev"></script>
+</body>
+</html>

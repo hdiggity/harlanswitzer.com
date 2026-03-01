@@ -1,0 +1,257 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>users — harlanswitzer.com</title>
+  <style>
+    :root {
+      --bg: #ffffff;
+      --fg: #6d28d9;
+      --muted: rgba(109,40,217,.45);
+      --border: rgba(109,40,217,.12);
+      --row-alt: rgba(109,40,217,.025);
+      --font: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body { height: 100%; }
+    body {
+      font-family: var(--font);
+      background: var(--bg);
+      color: var(--fg);
+      font-size: 14px;
+      line-height: 1.5;
+    }
+
+    .hd {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 16px 28px;
+      border-bottom: 1px solid var(--border);
+    }
+    .hd-left { display: flex; flex-direction: column; gap: 2px; }
+    .hd-site {
+      font-size: 11px;
+      letter-spacing: .12em;
+      text-transform: uppercase;
+      color: var(--muted);
+    }
+    .hd-title {
+      font-size: 18px;
+      font-weight: 700;
+      letter-spacing: .02em;
+      text-transform: uppercase;
+    }
+    .hd-right { display: flex; align-items: center; gap: 12px; }
+    .hd-btn {
+      background: none;
+      border: 1px solid var(--border);
+      color: var(--muted);
+      font-size: 11px;
+      letter-spacing: .1em;
+      text-transform: uppercase;
+      padding: 6px 14px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-family: var(--font);
+      text-decoration: none;
+      display: inline-flex;
+      align-items: center;
+      transition: color 150ms, border-color 150ms;
+    }
+    .hd-btn:hover { color: var(--fg); border-color: var(--fg); }
+
+    .content { padding: 32px 28px 48px; max-width: 860px; }
+
+    .section-title {
+      font-size: 10px;
+      letter-spacing: .14em;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-bottom: 16px;
+      font-weight: 600;
+    }
+
+    table { width: 100%; border-collapse: collapse; font-size: 13px; margin-bottom: 40px; }
+    th {
+      text-align: left;
+      padding: 7px 12px;
+      font-size: 10px;
+      letter-spacing: .1em;
+      text-transform: uppercase;
+      color: var(--muted);
+      border-bottom: 1px solid var(--border);
+      white-space: nowrap;
+    }
+    td { padding: 10px 12px; border-bottom: 1px solid var(--border); vertical-align: middle; }
+    tr:last-child td { border-bottom: none; }
+    tr:nth-child(even) td { background: var(--row-alt); }
+
+    .self-tag {
+      font-size: 10px;
+      letter-spacing: .06em;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-left: 6px;
+    }
+
+    .badge-sessions {
+      display: inline-block;
+      font-size: 11px;
+      font-weight: 700;
+      padding: 2px 8px;
+      border-radius: 99px;
+      background: rgba(109,40,217,.08);
+      color: var(--fg);
+    }
+
+    .actions { display: flex; gap: 6px; flex-wrap: wrap; }
+    .btn {
+      background: none;
+      border: 1px solid var(--border);
+      color: var(--muted);
+      font-size: 10px;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+      padding: 4px 10px;
+      border-radius: 5px;
+      cursor: pointer;
+      font-family: var(--font);
+      white-space: nowrap;
+      transition: color 150ms, border-color 150ms;
+    }
+    .btn:hover { color: var(--fg); border-color: var(--fg); }
+    .btn-danger:hover { color: #dc2626; border-color: #dc2626; }
+
+    /* modal */
+    .modal-backdrop {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,.3);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 100;
+    }
+    .modal-backdrop[hidden] { display: none; }
+    .modal-box {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 28px 32px;
+      width: 340px;
+      position: relative;
+    }
+    .modal-title {
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: .14em;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-bottom: 18px;
+    }
+    .modal-close {
+      position: absolute;
+      top: 14px; right: 16px;
+      background: none; border: none;
+      font-size: 18px; color: var(--muted);
+      cursor: pointer; line-height: 1;
+    }
+    .modal-close:hover { color: var(--fg); }
+    form { display: flex; flex-direction: column; gap: 10px; }
+    label {
+      font-size: 10px;
+      letter-spacing: .1em;
+      text-transform: uppercase;
+      color: var(--muted);
+    }
+    input[type="text"],
+    input[type="password"] {
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 8px 10px;
+      font-family: var(--font);
+      font-size: 13px;
+      color: var(--fg);
+      background: var(--bg);
+      outline: none;
+      transition: border-color 150ms;
+      width: 100%;
+    }
+    input:focus { border-color: var(--fg); }
+    .modal-error { font-size: 12px; color: #dc2626; min-height: 16px; }
+    .modal-actions { display: flex; gap: 8px; justify-content: flex-end; margin-top: 4px; }
+    .btn-primary {
+      background: var(--fg);
+      color: #fff;
+      border: 1px solid var(--fg);
+      font-size: 10px;
+      letter-spacing: .1em;
+      text-transform: uppercase;
+      padding: 7px 16px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-family: var(--font);
+    }
+    .btn-primary:hover { opacity: .88; }
+
+    .notice { font-size: 12px; color: var(--muted); padding: 32px 0; text-align: center; }
+  </style>
+</head>
+<body>
+  <header class="hd">
+    <div class="hd-left">
+      <span class="hd-site">harlanswitzer.com</span>
+      <span class="hd-title">users</span>
+    </div>
+    <div class="hd-right">
+      <a href="/admin.html" class="hd-btn">home</a>
+      <button id="logoutBtn" class="hd-btn">logout</button>
+    </div>
+  </header>
+
+  <div class="content">
+    <p class="section-title">accounts</p>
+    <div id="userTable"><p class="notice">loading…</p></div>
+  </div>
+
+  <!-- set username modal -->
+  <div id="unModal" class="modal-backdrop" hidden>
+    <div class="modal-box">
+      <button class="modal-close" id="unModalClose">&times;</button>
+      <p class="modal-title" id="unModalTitle">set username</p>
+      <form id="unForm">
+        <label for="unInput">new username</label>
+        <input id="unInput" type="text" autocomplete="off" required />
+        <span class="modal-error" id="unError"></span>
+        <div class="modal-actions">
+          <button type="button" class="btn" id="unCancel">cancel</button>
+          <button type="submit" class="btn-primary">save</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- set password modal -->
+  <div id="pwModal" class="modal-backdrop" hidden>
+    <div class="modal-box">
+      <button class="modal-close" id="pwModalClose">&times;</button>
+      <p class="modal-title" id="pwModalTitle">set password</p>
+      <form id="pwForm">
+        <label for="pwInput">new password</label>
+        <input id="pwInput" type="password" autocomplete="new-password" required />
+        <label for="pwConfirm">confirm password</label>
+        <input id="pwConfirm" type="password" autocomplete="new-password" required />
+        <span class="modal-error" id="pwError"></span>
+        <div class="modal-actions">
+          <button type="button" class="btn" id="pwCancel">cancel</button>
+          <button type="submit" class="btn-primary">save</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script src="./js/users.js?v=dev"></script>
+</body>
+</html>

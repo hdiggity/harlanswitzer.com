@@ -3,124 +3,133 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Stats — Harlan Switzer</title>
+  <title>admin — harlanswitzer.com</title>
   <style>
     :root {
       --bg: #ffffff;
       --fg: #6d28d9;
-      --muted: rgba(109,40,217,.55);
-      --border: rgba(109,40,217,.15);
-      --row-alt: rgba(109,40,217,.03);
+      --muted: rgba(109,40,217,.45);
+      --border: rgba(109,40,217,.12);
       --font: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial;
     }
-    * { box-sizing: border-box; }
-    html, body { height: 100%; margin: 0; }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body { height: 100%; }
     body {
       font-family: var(--font);
       background: var(--bg);
       color: var(--fg);
       font-size: 14px;
-      line-height: 1.5;
     }
-    header {
+
+    .hd {
       display: flex;
       align-items: center;
       justify-content: space-between;
-      padding: 16px 24px;
+      padding: 16px 28px;
       border-bottom: 1px solid var(--border);
     }
-    header h1 {
-      margin: 0;
-      font-size: 16px;
-      font-weight: 700;
-      letter-spacing: .06em;
+    .hd-site {
+      font-size: 11px;
+      letter-spacing: .12em;
+      text-transform: uppercase;
+      color: var(--muted);
     }
-    button#logoutBtn {
+    .hd-btn {
       background: none;
       border: 1px solid var(--border);
       color: var(--muted);
-      font-size: 12px;
-      letter-spacing: .08em;
-      padding: 6px 12px;
+      font-size: 11px;
+      letter-spacing: .1em;
+      text-transform: uppercase;
+      padding: 6px 14px;
       border-radius: 6px;
       cursor: pointer;
       font-family: var(--font);
+      transition: color 150ms, border-color 150ms;
     }
-    button#logoutBtn:hover { color: var(--fg); border-color: var(--fg); }
-    main { padding: 24px; max-width: 1100px; margin: 0 auto; }
-    section { margin-bottom: 40px; }
-    h2 {
-      font-size: 11px;
-      font-weight: 700;
-      letter-spacing: .14em;
-      text-transform: uppercase;
-      color: var(--muted);
-      margin: 0 0 12px;
-    }
-    #botSplit {
-      font-size: 14px;
+    .hd-btn:hover { color: var(--fg); border-color: var(--fg); }
+
+    .hub {
       display: flex;
-      gap: 24px;
-      padding: 12px 0;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: calc(100vh - 57px);
+      gap: 40px;
+      padding: 48px 28px;
     }
-    #botSplit strong { color: var(--fg); }
-    table {
-      width: 100%;
-      border-collapse: collapse;
+
+    .hub-greeting {
       font-size: 13px;
-    }
-    th {
-      text-align: left;
-      padding: 6px 10px;
-      font-size: 11px;
       letter-spacing: .08em;
       text-transform: uppercase;
       color: var(--muted);
-      border-bottom: 1px solid var(--border);
     }
-    td {
-      padding: 6px 10px;
-      border-bottom: 1px solid var(--border);
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      max-width: 320px;
+
+    .hub-nav {
+      display: flex;
+      gap: 16px;
     }
-    tr:nth-child(even) td { background: var(--row-alt); }
-    .empty { color: var(--muted); font-size: 13px; padding: 8px 0; }
+
+    .hub-link {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 160px;
+      height: 80px;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      text-decoration: none;
+      font-size: 12px;
+      letter-spacing: .18em;
+      text-transform: uppercase;
+      font-weight: 700;
+      color: var(--muted);
+      transition: color 150ms, border-color 150ms, background 150ms;
+    }
+    .hub-link:hover {
+      color: var(--fg);
+      border-color: var(--fg);
+      background: rgba(109,40,217,.04);
+    }
+
+    @media (max-width: 400px) {
+      .hub-nav { flex-direction: column; }
+      .hub-link { width: 100%; }
+    }
   </style>
 </head>
 <body>
-  <header>
-    <h1>stats</h1>
-    <button id="logoutBtn">logout</button>
+  <header class="hd">
+    <span class="hd-site">harlanswitzer.com</span>
+    <button id="logoutBtn" class="hd-btn">logout</button>
   </header>
-  <main>
-    <section>
-      <h2>summary</h2>
-      <div id="botSplit">loading...</div>
-    </section>
-    <section>
-      <h2>recent requests</h2>
-      <div id="recentRequests">loading...</div>
-    </section>
-    <section>
-      <h2>recent events</h2>
-      <div id="recentEvents">loading...</div>
-    </section>
-    <section>
-      <h2>top paths</h2>
-      <div id="topPaths">loading...</div>
-    </section>
-    <section>
-      <h2>top countries</h2>
-      <div id="topCountries">loading...</div>
-    </section>
-    <section>
-      <h2>top referers</h2>
-      <div id="topReferers">loading...</div>
-    </section>
-  </main>
-  <script src="./js/admin.js"></script>
+
+  <div class="hub">
+    <span class="hub-greeting" id="welcomeMsg">welcome</span>
+    <nav class="hub-nav">
+      <a href="/stats.html" class="hub-link">stats</a>
+      <a href="/users.html" class="hub-link">users</a>
+      <a href="/bests" class="hub-link">bests</a>
+    </nav>
+  </div>
+
+  <script>
+    (function () {
+      fetch('/auth/me')
+        .then(function (r) { return r.json(); })
+        .then(function (d) {
+          if (!d.loggedIn) { location.href = '/'; return; }
+          if (d.username) {
+            document.getElementById('welcomeMsg').textContent = 'welcome, ' + d.username;
+          }
+        })
+        .catch(function () { location.href = '/'; });
+
+      document.getElementById('logoutBtn').addEventListener('click', function () {
+        fetch('/auth/logout', { method: 'POST' }).then(function () { location.href = '/'; });
+      });
+    })();
+  </script>
 </body>
 </html>

@@ -27,11 +27,11 @@ export async function onRequestPost(context) {
   const verifiedBot = cf.botManagement?.verifiedBot ? 1 : 0;
   const now = Math.floor(Date.now() / 1000);
 
-  if (!env.DB) return new Response(null, { status: 200 });
+  if (!env.db) return new Response(null, { status: 200 });
 
   const stmts = body.map(ev => {
     const data = ev.data != null ? JSON.stringify(ev.data) : null;
-    return env.DB.prepare(
+    return env.db.prepare(
       `INSERT INTO events (ts, vid, sid, type, path, data, user_agent, referer, bot_score, verified_bot, ip_hash)
        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
     ).bind(
@@ -49,7 +49,7 @@ export async function onRequestPost(context) {
     );
   });
 
-  waitUntil(env.DB.batch(stmts));
+  waitUntil(env.db.batch(stmts));
 
   return new Response(null, { status: 200 });
 }

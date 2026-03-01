@@ -35,7 +35,10 @@
       <div class="pill" id="modePill">effect: kinetic</div>
     </div>
 
-    <a href="#" id="loginBtn" class="login-link">login</a>
+    <div class="auth-corner">
+      <a href="#" id="loginBtn" class="auth-link">login</a>
+      <a href="#" id="signupBtn" class="auth-link">signup</a>
+    </div>
 
     <div id="loginModal" class="modal-backdrop" hidden>
       <div class="modal-box" role="dialog" aria-modal="true" aria-label="login">
@@ -47,6 +50,22 @@
           <input id="loginPassword" name="password" type="password" autocomplete="current-password" required />
           <span class="modal-error" id="loginError"></span>
           <button type="submit">login</button>
+        </form>
+      </div>
+    </div>
+
+    <div id="signupModal" class="modal-backdrop" hidden>
+      <div class="modal-box" role="dialog" aria-modal="true" aria-label="signup">
+        <button class="modal-close" id="signupModalClose" aria-label="close">&times;</button>
+        <form id="signupForm" autocomplete="on">
+          <label for="signupUsername">username</label>
+          <input id="signupUsername" name="username" type="text" autocomplete="username" required />
+          <label for="signupPassword">password</label>
+          <input id="signupPassword" name="password" type="password" autocomplete="new-password" required />
+          <label for="signupConfirm">confirm password</label>
+          <input id="signupConfirm" name="confirm" type="password" autocomplete="new-password" required />
+          <span class="modal-error" id="signupError"></span>
+          <button type="submit">create account</button>
         </form>
       </div>
     </div>

@@ -1,16 +1,16 @@
+import { verifySession } from '../_auth.js';
+
 export async function onRequestPost(context) {
   const { request, env } = context;
-
-  const token = request.headers.get('x-setup-token');
-  if (!token || token !== env.ADMIN_SETUP_TOKEN) {
-    return json({ error: 'forbidden' }, 403);
-  }
 
   if (!env.db) return json({ error: 'server error' }, 500);
 
   const existing = await env.db.prepare('SELECT id FROM users LIMIT 1').first();
+
+  // First user can be created freely; subsequent ones require an admin session
   if (existing) {
-    return json({ error: 'already registered' }, 409);
+    const session = await verifySession(request, env);
+    if (!session) return json({ error: 'unauthorized' }, 401);
   }
 
   let body;
@@ -27,6 +27,9 @@ export async function onRequestPost(context) {
   if (!password || typeof password !== 'string' || password.length < 12) {
     return json({ error: 'password must be at least 12 characters' }, 400);
   }
+
+  const taken = await env.db.prepare('SELECT id FROM users WHERE username = ?').bind(username).first();
+  if (taken) return json({ error: 'username taken' }, 409);
 
   const salt = crypto.randomUUID();
   const iterations = 100000;

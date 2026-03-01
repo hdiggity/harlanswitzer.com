@@ -1,5 +1,7 @@
 // shared session verification — not a route
 export async function verifySession(request, env) {
+  if (!env.db || !env.SESSION_SIGNING_KEY) return null;
+
   const cookie = request.headers.get('cookie') || '';
   const match = cookie.match(/(?:^|;\s*)session=([^;]+)/);
   if (!match) return null;
@@ -28,7 +30,7 @@ export async function verifySession(request, env) {
   if (!valid) return null;
 
   const now = Math.floor(Date.now() / 1000);
-  const row = await env.DB.prepare(
+  const row = await env.db.prepare(
     'SELECT id, user_id, expires_at FROM sessions WHERE id = ? AND revoked = 0'
   ).bind(sessionId).first();
 
