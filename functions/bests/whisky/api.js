@@ -423,12 +423,36 @@ async function handlePost(request, env, userId) {
       if (key in updates) { fields.push(key + ' = ?'); vals.push(updates[key] ?? null); }
     }
     if ('when_text' in updates) { fields.push('when_ts = ?'); vals.push(parseWhenTs(updates.when_text)); }
+
+    const typeChanging = 'type' in updates && updates.type && updates.type !== existing.type;
+    if (typeChanging) { fields.push('type = ?'); vals.push(updates.type); }
+
     if (!fields.length) return json({ error: 'no valid fields' }, 400);
 
     await logHistory(env, whisky_id, 'update', existing, userId);
     const now = Math.floor(Date.now() / 1000);
     fields.push('updated_at = ?'); vals.push(now); vals.push(whisky_id);
     await env.db.prepare(`UPDATE bests_whiskies SET ${fields.join(', ')} WHERE id = ?`).bind(...vals).run();
+
+    if (typeChanging) {
+      // compact old type rank gap
+      if (existing.rank_index != null) {
+        await env.db.prepare(
+          'UPDATE bests_whiskies SET rank_index = rank_index - 1, updated_at = ? WHERE type = ? AND rank_index > ?'
+        ).bind(now, existing.type, existing.rank_index).run();
+      }
+      await recomputeTypeScores(env, existing.type);
+      // append to end of new type
+      const tailRow = await env.db.prepare(
+        'SELECT COUNT(*) AS cnt FROM bests_whiskies WHERE type = ? AND id != ?'
+      ).bind(updates.type, whisky_id).first();
+      const newIndex = tailRow?.cnt ?? 0;
+      await env.db.prepare(
+        'UPDATE bests_whiskies SET rank_index = ?, updated_at = ? WHERE id = ?'
+      ).bind(newIndex, now, whisky_id).run();
+      await recomputeTypeScores(env, updates.type);
+    }
+
     const updated = await env.db.prepare('SELECT * FROM bests_whiskies WHERE id = ?').bind(whisky_id).first();
     return json({ updated_whisky: updated });
   }

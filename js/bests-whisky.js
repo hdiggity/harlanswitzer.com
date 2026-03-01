@@ -274,6 +274,7 @@
     var updates = {
       distillery:        el('e-distillery').value.trim(),
       product:           el('e-product').value.trim(),
+      type:              el('e-type').value.trim(),
       age:               el('e-age').value.trim() || null,
       country_territory: el('e-country').value.trim() || null,
       where_name:        el('e-where-name').value.trim() || null,
@@ -288,7 +289,11 @@
     var d = await res.json();
     el('editSaveStatus').textContent = 'saved';
     var idx = state.allWhiskies.findIndex(function (w) { return w.id === editingWhiskyId; });
-    if (idx >= 0) { state.allWhiskies[idx] = d.updated_whisky; renderTypeFilter(); renderFilterBar(); renderList(); }
+    if (idx >= 0) {
+      var typeChanged = state.allWhiskies[idx].type !== d.updated_whisky.type;
+      state.allWhiskies[idx] = d.updated_whisky;
+      if (typeChanged) { await loadData(); } else { renderTypeFilter(); renderFilterBar(); renderList(); }
+    }
   }
 
   // ── delete whisky ─────────────────────────────────────────────────────────

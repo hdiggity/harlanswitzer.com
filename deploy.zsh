@@ -2,7 +2,7 @@
 set -euo pipefail
 
 git add -A
-git diff-index --quiet HEAD || git commit -m "deploy"
+git diff-index --quiet HEAD || git commit -m "deploy" > /dev/null
 
 VER=$(git rev-parse --short HEAD 2>/dev/null || date +%s)
 DIST=$(mktemp -d)
@@ -24,11 +24,12 @@ sed -i '' "s/v=dev/v=$VER/g" "$DIST/index.html"
 [[ -f "$DIST/bests/beer.html" ]]   && sed -i '' "s/v=dev/v=$VER/g" "$DIST/bests/beer.html"
 [[ -f "$DIST/bests/whisky.html" ]] && sed -i '' "s/v=dev/v=$VER/g" "$DIST/bests/whisky.html"
 
-print "pushing $VER..."
 git push -q
 
-print "deploying..."
-npx wrangler pages deploy "$DIST" \
+if ! wrangler_out=$(npx wrangler pages deploy "$DIST" \
   --project-name harlanswitzer \
   --branch main \
-  --commit-dirty=true
+  --commit-dirty=true 2>&1); then
+  print "$wrangler_out" | grep -v -E '(⛅|─{3,}|🪵|update available)' | sed '/^[[:space:]]*$/d'
+  exit 1
+fi
