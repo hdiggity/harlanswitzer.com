@@ -5,7 +5,7 @@
     activeSession: null,
     newBeer: null,
     filterType: 'all',
-    filters: { country: '', brewery: '', where: '' },
+    filters: { country: '', brewery: '', where: '', sub_type: '' },
     sortCol: 'score',
     sortDir: 'desc',
   };
@@ -94,9 +94,10 @@
       ? state.allBeers
       : state.allBeers.filter(function (b) { return b.type === state.filterType; });
 
-    var countries = Array.from(new Set(base.map(function (b) { return stripEmoji(b.country_territory || ''); }).filter(Boolean))).sort();
-    var breweries = Array.from(new Set(base.map(function (b) { return b.brewery || ''; }).filter(Boolean))).sort();
-    var wheres    = Array.from(new Set(base.map(function (b) { return b.where_city_state || ''; }).filter(Boolean))).sort();
+    var countries  = Array.from(new Set(base.map(function (b) { return stripEmoji(b.country_territory || ''); }).filter(Boolean))).sort();
+    var breweries  = Array.from(new Set(base.map(function (b) { return b.brewery || ''; }).filter(Boolean))).sort();
+    var wheres     = Array.from(new Set(base.map(function (b) { return b.where_city_state || ''; }).filter(Boolean))).sort();
+    var subTypes   = Array.from(new Set(base.map(function (b) { return b.sub_type || ''; }).filter(Boolean))).sort();
 
     function combo(id, dlId, placeholder, opts, cur) {
       var dl = '<datalist id="' + dlId + '">' +
@@ -107,15 +108,17 @@
     }
 
     bar.innerHTML =
-      combo('filterCountry', 'fb-country-list', 'country',  countries, state.filters.country) +
-      combo('filterBrewery', 'fb-brewery-list', 'brewery',  breweries, state.filters.brewery) +
-      combo('filterWhere',   'fb-where-list',   'city',     wheres,    state.filters.where);
+      combo('filterCountry', 'fb-country-list',   'country',  countries, state.filters.country) +
+      combo('filterBrewery', 'fb-brewery-list',   'brewery',  breweries, state.filters.brewery) +
+      combo('filterSubType', 'fb-sub-type-list',  'sub-type', subTypes,  state.filters.sub_type) +
+      combo('filterWhere',   'fb-where-list',     'city',     wheres,    state.filters.where);
 
     bar.querySelectorAll('.filter-input').forEach(function (s) {
       s.addEventListener('input', function () {
-        state.filters.country = (el('filterCountry') && el('filterCountry').value) || '';
-        state.filters.brewery = (el('filterBrewery') && el('filterBrewery').value) || '';
-        state.filters.where   = (el('filterWhere')   && el('filterWhere').value)   || '';
+        state.filters.country  = (el('filterCountry') && el('filterCountry').value) || '';
+        state.filters.brewery  = (el('filterBrewery') && el('filterBrewery').value) || '';
+        state.filters.sub_type = (el('filterSubType') && el('filterSubType').value) || '';
+        state.filters.where    = (el('filterWhere')   && el('filterWhere').value)   || '';
         renderList();
       });
     });
@@ -145,6 +148,10 @@
       var fb = state.filters.brewery.toLowerCase();
       beers = beers.filter(function (b) { return b.brewery && b.brewery.toLowerCase().includes(fb); });
     }
+    if (state.filters.sub_type) {
+      var fs = state.filters.sub_type.toLowerCase();
+      beers = beers.filter(function (b) { return b.sub_type && b.sub_type.toLowerCase().includes(fs); });
+    }
     if (state.filters.where) {
       var fw = state.filters.where.toLowerCase();
       beers = beers.filter(function (b) { return b.where_city_state && b.where_city_state.toLowerCase().includes(fw); });
@@ -166,6 +173,7 @@
     { id: 'country', label: 'country' },
     { id: 'where',   label: 'where'   },
     { id: 'when',    label: 'when'    },
+    { id: 'notes',   label: 'notes', nosort: true },
   ];
 
   function arrow(col) {
@@ -184,6 +192,7 @@
 
     var thead = '<thead><tr>' +
       COLS.map(function (c) {
+        if (c.nosort) return '<th>' + c.label + '</th>';
         var active = state.sortCol === c.id ? ' sort-active' : '';
         return '<th class="sortable' + active + '" data-col="' + c.id + '">' + c.label + arrow(c.id) + '</th>';
       }).join('') +
@@ -195,6 +204,7 @@
         : '<span class="score-null">—</span>';
       var product = esc(b.product) + (b.sub_type ? '<div class="cell-sub">' + esc(b.sub_type) + '</div>' : '');
       var where = [b.where_name, b.where_city_state, b.where_country].filter(Boolean).join(', ');
+      var notes = b.event_notes ? '<span class="cell-notes">' + esc(b.event_notes) + '</span>' : '';
       return '<tr>' +
         '<td>' + score + '</td>' +
         '<td>' + product + '</td>' +
@@ -202,6 +212,7 @@
         '<td>' + esc(stripEmoji(b.country_territory || '')) + '</td>' +
         '<td>' + esc(where) + '</td>' +
         '<td>' + esc(formatWhen(b)) + '</td>' +
+        '<td class="cell-notes-col">' + notes + '</td>' +
         '<td><div class="row-actions">' +
           '<button class="btn-edit"   data-id="' + b.id + '">edit</button>' +
           '<button class="btn-remove" data-id="' + b.id + '">remove</button>' +

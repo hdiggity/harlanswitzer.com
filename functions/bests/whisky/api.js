@@ -6,13 +6,29 @@ const DEFAULT_SHEET_ID = '1BRwJfl8um0kcH6uaCjVAFAZ5sCyoADc9MMTNGHBVXjc';
 
 function parseWhenTs(text) {
   if (!text) return null;
-  const m = String(text).trim().match(/^(\d{1,2})\/(\d{2,4})$/);
-  if (!m) return null;
-  const month = parseInt(m[1], 10);
-  let year = parseInt(m[2], 10);
-  if (year < 100) year += 2000;
-  if (month < 1 || month > 12) return null;
-  return Math.floor(Date.UTC(year, month - 1, 1) / 1000);
+  const s = String(text).trim();
+  // M/YY, MM/YY, M/YYYY, MM/YYYY
+  const m1 = s.match(/^(\d{1,2})\/(\d{2,4})$/);
+  if (m1) {
+    const month = parseInt(m1[1], 10);
+    let year = parseInt(m1[2], 10);
+    if (year < 100) year += 2000;
+    if (month < 1 || month > 12) return null;
+    return Math.floor(Date.UTC(year, month - 1, 1) / 1000);
+  }
+  // YYYY (year only)
+  const m2 = s.match(/^(\d{4})$/);
+  if (m2) return Math.floor(Date.UTC(parseInt(m2[1], 10), 0, 1) / 1000);
+  // M-YY or M-YYYY
+  const m3 = s.match(/^(\d{1,2})-(\d{2,4})$/);
+  if (m3) {
+    const month = parseInt(m3[1], 10);
+    let year = parseInt(m3[2], 10);
+    if (year < 100) year += 2000;
+    if (month < 1 || month > 12) return null;
+    return Math.floor(Date.UTC(year, month - 1, 1) / 1000);
+  }
+  return null;
 }
 
 // ── table setup ───────────────────────────────────────────────────────────────
@@ -156,7 +172,7 @@ async function seedFromSheet(env, userId) {
   const lines = csvText.split('\n').map(l => l.trim()).filter(Boolean);
   if (lines.length < 2) return;
 
-  const headers = parseCSVRow(lines[0]).map(h => h.toLowerCase().trim());
+  const headers = parseCSVRow(lines[0]).map(h => h.toLowerCase().trim().replace(/\s+/g, ' '));
   const col = name => headers.indexOf(name);
   const colFirst = (...names) => names.reduce((f, n) => f >= 0 ? f : col(n), -1);
 
@@ -221,6 +237,98 @@ async function seedFromSheet(env, userId) {
         i, computeScore(i, n), userId, now, now
       ).run();
     }
+  }
+}
+
+// ── normalize when_text to consistent M/YYYY format ──────────────────────────
+
+function normalizeWhenText(text) {
+  if (!text) return { when_text: null, when_ts: null };
+  const s = String(text).trim();
+  const ts = parseWhenTs(s);
+  if (ts === null) return { when_text: s, when_ts: null };
+  const d = new Date(ts * 1000);
+  const month = d.getUTCMonth() + 1;
+  const year = d.getUTCFullYear();
+  // year-only inputs stay as YYYY, everything else becomes M/YYYY
+  const normalized = /^\d{4}$/.test(s) ? s : `${month}/${year}`;
+  return { when_text: normalized, when_ts: ts };
+}
+
+async function normalizeDates(env) {
+  const rows = await env.db.prepare(
+    'SELECT id, when_text FROM bests_whiskies WHERE when_text IS NOT NULL'
+  ).all();
+  const now = Math.floor(Date.now() / 1000);
+  for (const r of (rows.results || [])) {
+    const { when_text, when_ts } = normalizeWhenText(r.when_text);
+    if (when_text !== r.when_text || when_ts !== null) {
+      await env.db.prepare(
+        'UPDATE bests_whiskies SET when_text = ?, when_ts = ?, updated_at = ? WHERE id = ?'
+      ).bind(when_text, when_ts, now, r.id).run().catch(() => {});
+    }
+  }
+}
+
+// ── sync NULL fields from sheet ───────────────────────────────────────────────
+
+async function syncFromSheet(env) {
+  const sheetId = env.BESTS_WHISKY_SHEET_ID || DEFAULT_SHEET_ID;
+  let csvText;
+  try {
+    const res = await fetch(`https://docs.google.com/spreadsheets/d/${sheetId}/export?format=csv`);
+    if (!res.ok) return;
+    csvText = await res.text();
+  } catch { return; }
+
+  const lines = csvText.split('\n').map(l => l.trim()).filter(Boolean);
+  if (lines.length < 2) return;
+
+  const headers = parseCSVRow(lines[0]).map(h => h.toLowerCase().trim().replace(/\s+/g, ' '));
+  const col = name => headers.indexOf(name);
+  const colFirst = (...names) => names.reduce((f, n) => f >= 0 ? f : col(n), -1);
+
+  const iDistillery     = colFirst('distillery');
+  const iProduct        = colFirst('product');
+  const iCountry        = colFirst('country / territory', 'country/territory', 'country', 'origin');
+  const iAge            = colFirst('age');
+  const iWhereName      = colFirst('where', 'where (name)', 'venue');
+  const iWhereCityState = colFirst('where (city, state)', 'where (city,state)', 'where (city/state)', 'city/state', 'city');
+  const iWhereCountry   = colFirst('where (country)', 'where country');
+  const iWhen           = colFirst('when', 'date');
+  const iNotes          = colFirst('notes', 'event notes');
+
+  if (iDistillery < 0 || iProduct < 0) return;
+
+  const now = Math.floor(Date.now() / 1000);
+  for (let i = 1; i < lines.length; i++) {
+    const cols = parseCSVRow(lines[i]);
+    const distillery = (cols[iDistillery] || '').trim();
+    const product    = (cols[iProduct]    || '').trim();
+    if (!distillery || !product) continue;
+
+    const fields = [], vals = [];
+    const maybeSet = (idx, col) => {
+      if (idx >= 0) { const v = (cols[idx] || '').trim() || null; if (v) { fields.push(`${col} = ?`); vals.push(v); } }
+    };
+    maybeSet(iCountry, 'country_territory');
+    maybeSet(iAge, 'age');
+    maybeSet(iWhereName, 'where_name');
+    maybeSet(iWhereCityState, 'where_city_state');
+    maybeSet(iWhereCountry, 'where_country');
+    maybeSet(iWhen, 'when_text');
+    if (iWhen >= 0) {
+      const ts = parseWhenTs((cols[iWhen] || '').trim());
+      if (ts !== null) { fields.push('when_ts = ?'); vals.push(ts); }
+    }
+    maybeSet(iNotes, 'notes');
+    if (!fields.length) continue;
+
+    fields.push('updated_at = ?'); vals.push(now);
+    const nullChecks = fields.slice(0, -1).map(f => `${f.split(' ')[0]} IS NULL`).join(' AND ');
+    await env.db.prepare(
+      `UPDATE bests_whiskies SET ${fields.join(', ')} WHERE LOWER(distillery) = LOWER(?) AND LOWER(product) = LOWER(?) AND (${nullChecks})`
+    ).bind(...vals, distillery, product).run().catch(() => {});
   }
 }
 
@@ -313,6 +421,12 @@ async function handleGet(env, userId) {
   const countRow = await env.db.prepare('SELECT COUNT(*) AS cnt FROM bests_whiskies').first();
   if ((countRow?.cnt ?? 0) === 0) {
     await seedFromSheet(env, userId);
+  } else {
+    const missingRow = await env.db.prepare(
+      'SELECT COUNT(*) AS cnt FROM bests_whiskies WHERE country_territory IS NULL OR when_ts IS NULL'
+    ).first();
+    if ((missingRow?.cnt ?? 0) > 0) await syncFromSheet(env);
+    await normalizeDates(env);
   }
 
   const [whiskiesResult, sessionRow] = await Promise.all([

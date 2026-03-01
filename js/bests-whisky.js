@@ -5,7 +5,7 @@
     activeSession: null,
     newWhisky: null,
     filterType: 'all',
-    filters: { country: '', distillery: '', where: '' },
+    filters: { country: '', distillery: '', age: '', where: '' },
     sortCol: 'score',
     sortDir: 'desc',
   };
@@ -96,6 +96,7 @@
 
     var countries    = Array.from(new Set(base.map(function (w) { return stripEmoji(w.country_territory || ''); }).filter(Boolean))).sort();
     var distilleries = Array.from(new Set(base.map(function (w) { return w.distillery || ''; }).filter(Boolean))).sort();
+    var ages         = Array.from(new Set(base.map(function (w) { return w.age || ''; }).filter(Boolean))).sort();
     var wheres       = Array.from(new Set(base.map(function (w) { return w.where_city_state || ''; }).filter(Boolean))).sort();
 
     function combo(id, dlId, placeholder, opts, cur) {
@@ -109,12 +110,14 @@
     bar.innerHTML =
       combo('filterCountry',    'fb-country-list',    'country',    countries,    state.filters.country) +
       combo('filterDistillery', 'fb-distillery-list', 'distillery', distilleries, state.filters.distillery) +
+      combo('filterAge',        'fb-age-list',        'age',        ages,         state.filters.age) +
       combo('filterWhere',      'fb-where-list',      'city',       wheres,       state.filters.where);
 
     bar.querySelectorAll('.filter-input').forEach(function (s) {
       s.addEventListener('input', function () {
         state.filters.country    = (el('filterCountry')    && el('filterCountry').value)    || '';
         state.filters.distillery = (el('filterDistillery') && el('filterDistillery').value) || '';
+        state.filters.age        = (el('filterAge')        && el('filterAge').value)        || '';
         state.filters.where      = (el('filterWhere')      && el('filterWhere').value)      || '';
         renderList();
       });
@@ -145,6 +148,10 @@
       var fd = state.filters.distillery.toLowerCase();
       whiskies = whiskies.filter(function (w) { return w.distillery && w.distillery.toLowerCase().includes(fd); });
     }
+    if (state.filters.age) {
+      var fa = state.filters.age.toLowerCase();
+      whiskies = whiskies.filter(function (w) { return w.age && w.age.toLowerCase().includes(fa); });
+    }
     if (state.filters.where) {
       var fw = state.filters.where.toLowerCase();
       whiskies = whiskies.filter(function (w) { return w.where_city_state && w.where_city_state.toLowerCase().includes(fw); });
@@ -166,6 +173,7 @@
     { id: 'country',    label: 'country'    },
     { id: 'where',      label: 'where'      },
     { id: 'when',       label: 'when'       },
+    { id: 'notes',      label: 'notes', nosort: true },
   ];
 
   function arrow(col) {
@@ -184,6 +192,7 @@
 
     var thead = '<thead><tr>' +
       COLS.map(function (c) {
+        if (c.nosort) return '<th>' + c.label + '</th>';
         var active = state.sortCol === c.id ? ' sort-active' : '';
         return '<th class="sortable' + active + '" data-col="' + c.id + '">' + c.label + arrow(c.id) + '</th>';
       }).join('') +
@@ -195,6 +204,7 @@
         : '<span class="score-null">—</span>';
       var product = esc(w.product) + (w.age ? '<div class="cell-sub">' + esc(w.age) + '</div>' : '');
       var where = [w.where_name, w.where_city_state, w.where_country].filter(Boolean).join(', ');
+      var notes = w.notes ? '<span class="cell-notes">' + esc(w.notes) + '</span>' : '';
       return '<tr>' +
         '<td>' + score + '</td>' +
         '<td>' + product + '</td>' +
@@ -202,6 +212,7 @@
         '<td>' + esc(stripEmoji(w.country_territory || '')) + '</td>' +
         '<td>' + esc(where) + '</td>' +
         '<td>' + esc(formatWhen(w)) + '</td>' +
+        '<td class="cell-notes-col">' + notes + '</td>' +
         '<td><div class="row-actions">' +
           '<button class="btn-edit"   data-id="' + w.id + '">edit</button>' +
           '<button class="btn-remove" data-id="' + w.id + '">remove</button>' +
