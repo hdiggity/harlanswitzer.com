@@ -4,6 +4,8 @@ const DEFAULT_SHEET_ID = '1BRwJfl8um0kcH6uaCjVAFAZ5sCyoADc9MMTNGHBVXjc';
 
 // ── date helpers ──────────────────────────────────────────────────────────────
 
+const MONTH_NAMES = { jan:1,feb:2,mar:3,apr:4,may:5,jun:6,jul:7,aug:8,sep:9,oct:10,nov:11,dec:12 };
+
 function parseWhenTs(text) {
   if (!text) return null;
   const s = String(text).trim();
@@ -27,6 +29,13 @@ function parseWhenTs(text) {
     if (year < 100) year += 2000;
     if (month < 1 || month > 12) return null;
     return Math.floor(Date.UTC(year, month - 1, 1) / 1000);
+  }
+  // "Jan 2019", "January 2019", etc.
+  const m4 = s.match(/^([a-zA-Z]{3,9})\s+(\d{4})$/);
+  if (m4) {
+    const month = MONTH_NAMES[m4[1].toLowerCase().slice(0, 3)];
+    const year = parseInt(m4[2], 10);
+    if (month && year >= 1900 && year <= 2100) return Math.floor(Date.UTC(year, month - 1, 1) / 1000);
   }
   return null;
 }
@@ -257,12 +266,12 @@ function normalizeWhenText(text) {
 
 async function normalizeDates(env) {
   const rows = await env.db.prepare(
-    'SELECT id, when_text FROM bests_whiskies WHERE when_text IS NOT NULL'
+    'SELECT id, when_text, when_ts FROM bests_whiskies WHERE when_text IS NOT NULL'
   ).all();
   const now = Math.floor(Date.now() / 1000);
   for (const r of (rows.results || [])) {
     const { when_text, when_ts } = normalizeWhenText(r.when_text);
-    if (when_text !== r.when_text || when_ts !== null) {
+    if (when_text !== r.when_text || (when_ts !== null && when_ts !== r.when_ts)) {
       await env.db.prepare(
         'UPDATE bests_whiskies SET when_text = ?, when_ts = ?, updated_at = ? WHERE id = ?'
       ).bind(when_text, when_ts, now, r.id).run().catch(() => {});

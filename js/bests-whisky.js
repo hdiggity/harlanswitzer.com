@@ -18,17 +18,41 @@
     return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
   }
 
-  function stripEmoji(s) {
+  var ISO_TO_COUNTRY = {
+    US:'United States', JP:'Japan', IE:'Ireland', IN:'India', TW:'Taiwan',
+    CA:'Canada', NZ:'New Zealand', AU:'Australia', SE:'Sweden', IS:'Iceland',
+    DE:'Germany', FI:'Finland', FR:'France', GB:'United Kingdom',
+    ZA:'South Africa', MX:'Mexico', CZ:'Czech Republic', NO:'Norway',
+    DK:'Denmark', NL:'Netherlands', CH:'Switzerland', IT:'Italy', ES:'Spain',
+    PT:'Portugal', BR:'Brazil', PL:'Poland',
+  };
+
+  function emojiToCountry(s) {
     if (s == null) return '';
-    return String(s).replace(/[\u{1F1E0}-\u{1F1FF}\u{1F300}-\u{1FAFF}\u{2600}-\u{27BF}\uFE0F\u200D]/gu, '').trim();
+    var str = String(s).trim();
+    if (!str) return '';
+    // subdivision flags: 🏴󠁧󠁢󠁳󠁣󠁴󠁿 (sct=Scotland), 🏴󠁧󠁢󠁥󠁮󠁧󠁿 (eng=England), 🏴󠁧󠁢󠁷󠁬󠁳󠁿 (wls=Wales)
+    if (str.includes('\uE0073\uE0063\uE0074')) return 'Scotland';
+    if (str.includes('\uE0065\uE006E\uE0067')) return 'England';
+    if (str.includes('\uE0077\uE006C\uE0073')) return 'Wales';
+    // standard country flag: two regional indicator symbols (U+1F1E0..U+1F1FF)
+    var cps = Array.from(str).map(function (c) { return c.codePointAt(0); });
+    var ri = cps.filter(function (cp) { return cp >= 0x1F1E0 && cp <= 0x1F1FF; });
+    if (ri.length >= 2) {
+      var iso = ri.slice(0, 2).map(function (cp) { return String.fromCharCode(cp - 0x1F1E6 + 65); }).join('');
+      if (ISO_TO_COUNTRY[iso]) return ISO_TO_COUNTRY[iso];
+    }
+    // fallback: strip emoji chars and return what's left (text name already stored)
+    return str.replace(/[\u{1F1E0}-\u{1F1FF}\u{1F300}-\u{1FAFF}\u{2600}-\u{27BF}\u{E0000}-\u{E007F}\uFE0F\u200D]/gu, '').trim() || str;
   }
 
   function formatWhen(w) {
+    if (w.when_text) return w.when_text;
     if (w.when_ts) {
       var d = new Date(w.when_ts * 1000);
-      return (d.getUTCMonth() + 1) + '/' + d.getUTCDate() + '/' + d.getUTCFullYear();
+      return (d.getUTCMonth() + 1) + '/' + d.getUTCFullYear();
     }
-    return w.when_text || '';
+    return '';
   }
 
   function api(method, body) {
@@ -45,7 +69,7 @@
       if (w.distillery)        sets.distillery.add(w.distillery);
       if (w.type)              sets.type.add(w.type);
       if (w.age)               sets.age.add(w.age);
-      if (w.country_territory) sets.country.add(stripEmoji(w.country_territory));
+      if (w.country_territory) sets.country.add(emojiToCountry(w.country_territory));
       if (w.where_name)        sets.where_name.add(w.where_name);
       if (w.where_city_state)  sets.where_city.add(w.where_city_state);
       if (w.where_country)     sets.where_country.add(w.where_country);
@@ -94,7 +118,7 @@
       ? state.allWhiskies
       : state.allWhiskies.filter(function (w) { return w.type === state.filterType; });
 
-    var countries    = Array.from(new Set(base.map(function (w) { return stripEmoji(w.country_territory || ''); }).filter(Boolean))).sort();
+    var countries    = Array.from(new Set(base.map(function (w) { return emojiToCountry(w.country_territory || ''); }).filter(Boolean))).sort();
     var distilleries = Array.from(new Set(base.map(function (w) { return w.distillery || ''; }).filter(Boolean))).sort();
     var ages         = Array.from(new Set(base.map(function (w) { return w.age || ''; }).filter(Boolean))).sort();
     var wheres       = Array.from(new Set(base.map(function (w) { return w.where_city_state || ''; }).filter(Boolean))).sort();
@@ -142,7 +166,7 @@
     if (state.filterType !== 'all') whiskies = whiskies.filter(function (w) { return w.type === state.filterType; });
     if (state.filters.country) {
       var fc = state.filters.country.toLowerCase();
-      whiskies = whiskies.filter(function (w) { return w.country_territory && stripEmoji(w.country_territory).toLowerCase().includes(fc); });
+      whiskies = whiskies.filter(function (w) { return w.country_territory && emojiToCountry(w.country_territory).toLowerCase().includes(fc); });
     }
     if (state.filters.distillery) {
       var fd = state.filters.distillery.toLowerCase();
@@ -209,7 +233,7 @@
         '<td>' + score + '</td>' +
         '<td>' + product + '</td>' +
         '<td>' + esc(w.distillery) + '</td>' +
-        '<td>' + esc(stripEmoji(w.country_territory || '')) + '</td>' +
+        '<td>' + esc(emojiToCountry(w.country_territory || '')) + '</td>' +
         '<td>' + esc(where) + '</td>' +
         '<td>' + esc(formatWhen(w)) + '</td>' +
         '<td class="cell-notes-col">' + notes + '</td>' +
@@ -257,7 +281,7 @@
     el('e-product').value       = whisky.product || '';
     el('e-type').value          = whisky.type || '';
     el('e-age').value           = whisky.age || '';
-    el('e-country').value       = stripEmoji(whisky.country_territory || '');
+    el('e-country').value       = emojiToCountry(whisky.country_territory || '');
     el('e-where-name').value    = whisky.where_name || '';
     el('e-where-city').value    = whisky.where_city_state || '';
     el('e-where-country').value = whisky.where_country || '';
