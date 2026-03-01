@@ -46,8 +46,6 @@ export async function onRequestPost(context) {
   const salt = crypto.randomUUID();
   const iterations = 100000;
   const passwordHash = await pbkdf2Hex(password, salt, iterations);
-  const now = Math.floor(Date.now() / 1000);
-
   await env.db.prepare(
     'INSERT INTO users (username, password_hash, salt, iterations, created_at) VALUES (?, ?, ?, ?, ?)'
   ).bind(username, passwordHash, salt, iterations, now).run();
