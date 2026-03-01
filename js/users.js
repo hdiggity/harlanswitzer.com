@@ -144,7 +144,6 @@
     var me    = await meRes.json();
     if (!me.loggedIn) { location.href = '/'; return; }
 
-    if (me.username) el('welcomeMsg').textContent = 'users — ' + me.username;
     currentUserId = me.user_id || null;
 
     el('logoutBtn').addEventListener('click', function () {
