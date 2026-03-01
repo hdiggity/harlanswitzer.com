@@ -380,7 +380,7 @@
       fetch('/auth/logout', { method: 'POST' }).then(function () { location.href = '/'; });
     });
 
-    state.token = sessionStorage.getItem('bests_token');
+    state.token = localStorage.getItem('bests_token');
     if (!state.token) { location.href = '/bests'; return; }
 
     // add modal

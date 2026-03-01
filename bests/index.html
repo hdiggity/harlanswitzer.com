@@ -115,7 +115,7 @@
 
   <script>
     (function () {
-      var token = sessionStorage.getItem('bests_token');
+      var token = localStorage.getItem('bests_token');
 
       function showHub(username) {
         document.getElementById('pwModal').setAttribute('hidden', '');
@@ -125,6 +125,7 @@
       }
 
       document.getElementById('logoutBtn').addEventListener('click', function () {
+        localStorage.removeItem('bests_token');
         fetch('/auth/logout', { method: 'POST' }).then(function () { location.href = '/'; });
       });
 
@@ -157,7 +158,7 @@
                   document.getElementById('pwInput').focus();
                   return;
                 }
-                sessionStorage.setItem('bests_token', res.body.token);
+                localStorage.setItem('bests_token', res.body.token);
                 showHub(d.username);
               })
               .catch(function () { btn.disabled = false; document.getElementById('pwError').textContent = 'network error'; });
