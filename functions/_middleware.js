@@ -1,63 +1,92 @@
-const SKIP_PATHS = ['/collect', '/auth/', '/admin/api'];
-const BOT_SCORE_THRESHOLD = 30; // below this = block (1=bot, 99=human)
+const SKIP_LOG_PATHS = ['/collect', '/auth/', '/admin/api'];
+const BOT_THRESHOLD  = 30;   // below this CF bot score = block
+
+// Security headers added to every function response
+const SEC_HEADERS = {
+  'X-Content-Type-Options':  'nosniff',
+  'Referrer-Policy':         'strict-origin-when-cross-origin',
+  'Permissions-Policy':      'camera=(), microphone=(), geolocation=()',
+  // frame-ancestors replaces X-Frame-Options; 'unsafe-inline' needed for inline <script>/<style>
+  'Content-Security-Policy':
+    "default-src 'none'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; connect-src 'self'; img-src 'self' data:; frame-ancestors 'none'",
+};
 
 export async function onRequest(context) {
   const { request, env, next, waitUntil } = context;
-  const url = new URL(request.url);
-  const path = url.pathname;
+  const url    = new URL(request.url);
+  const path   = url.pathname;
+  const method = request.method.toUpperCase();
 
-  // block low bot-score traffic — skip /auth/ so login is never blocked
+  // ── bot score gate (skip /auth/ so legitimate logins are never blocked) ───
   if (!path.startsWith('/auth/')) {
     const score = request.cf?.botManagement?.score;
-    if (score !== undefined && score < BOT_SCORE_THRESHOLD) {
+    if (score !== undefined && score < BOT_THRESHOLD) {
       return new Response('Forbidden', { status: 403 });
     }
   }
 
-  // skip logging for these paths to avoid noise/loops
-  const skip = SKIP_PATHS.some(p => path === p || path.startsWith(p));
+  // ── CSRF: for state-changing requests on sensitive paths ─────────────────
+  // Check Sec-Fetch-Site (modern browsers) and Origin header (all browsers).
+  // Blocks requests that originate from a different site.
+  if (['POST', 'PATCH', 'DELETE'].includes(method)) {
+    const sensitive = path.startsWith('/auth/') || path.startsWith('/admin/') || path.startsWith('/bests/');
+    if (sensitive) {
+      // Sec-Fetch-Site is injected by the browser and cannot be spoofed from another origin
+      const sfs = request.headers.get('sec-fetch-site');
+      if (sfs && sfs !== 'same-origin' && sfs !== 'same-site' && sfs !== 'none') {
+        return new Response('Forbidden', { status: 403 });
+      }
 
-  // self-exclude cookie check
-  const cookie = request.headers.get('cookie') || '';
+      // Origin header check for browsers that don't send Sec-Fetch-Site
+      const origin = request.headers.get('origin');
+      if (origin) {
+        let originHost;
+        try { originHost = new URL(origin).hostname; } catch { return new Response('Forbidden', { status: 403 }); }
+        if (originHost !== url.hostname) {
+          return new Response('Forbidden', { status: 403 });
+        }
+      }
+    }
+  }
+
+  // ── logging skip + self-exclude cookie ────────────────────────────────────
+  const skipLog    = SKIP_LOG_PATHS.some(p => path === p || path.startsWith(p));
+  const cookie     = request.headers.get('cookie') || '';
   const selfExclude = /(?:^|;\s*)self_exclude=1/.test(cookie);
 
-  // pass through and capture response
+  // ── pass through ──────────────────────────────────────────────────────────
   const response = await next();
 
-  // handle ?self= param — mutate response headers
+  // ── self-exclude toggle ───────────────────────────────────────────────────
   const selfParam = url.searchParams.get('self');
-  if (selfParam === '1') {
-    const headers = new Headers(response.headers);
-    headers.append('Set-Cookie', 'self_exclude=1; Path=/; Max-Age=31536000; SameSite=Lax');
-    return new Response(response.body, { status: response.status, headers });
-  }
-  if (selfParam === '0') {
-    const headers = new Headers(response.headers);
-    headers.append('Set-Cookie', 'self_exclude=0; Path=/; Max-Age=0; SameSite=Lax');
+  if (selfParam === '1' || selfParam === '0') {
+    const headers = withSecHeaders(response.headers);
+    if (selfParam === '1') {
+      headers.append('Set-Cookie', 'self_exclude=1; Path=/; Max-Age=31536000; SameSite=Lax');
+    } else {
+      headers.append('Set-Cookie', 'self_exclude=0; Path=/; Max-Age=0; SameSite=Lax');
+    }
     return new Response(response.body, { status: response.status, headers });
   }
 
-  if (!skip && !selfExclude && env.db) {
-    const cf = request.cf || {};
-    const ip = request.headers.get('cf-connecting-ip') || '';
-    const ipHash = ip ? await sha256Hex(env.IP_HASH_SALT + ip) : '';
+  // ── request logging ───────────────────────────────────────────────────────
+  if (!skipLog && !selfExclude && env.db) {
+    const cf     = request.cf || {};
+    const ip     = request.headers.get('cf-connecting-ip') || '';
+    const ipHash = ip ? await sha256Hex((env.IP_HASH_SALT || '') + ip) : '';
 
     waitUntil(
       env.db.prepare(
-        `INSERT INTO requests (ts, host, path, method, status, country, asn, colo, user_agent, referer, ray, bot_score, verified_bot, ip_hash)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+        `INSERT INTO requests (ts,host,path,method,status,country,asn,colo,user_agent,referer,ray,bot_score,verified_bot,ip_hash)
+         VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)`
       ).bind(
         Math.floor(Date.now() / 1000),
-        url.hostname,
-        path,
-        request.method,
+        url.hostname, path, method,
         response.status,
-        cf.country || null,
-        cf.asn ? String(cf.asn) : null,
-        cf.colo || null,
+        cf.country || null, cf.asn ? String(cf.asn) : null, cf.colo || null,
         request.headers.get('user-agent') || null,
-        request.headers.get('referer') || null,
-        request.headers.get('cf-ray') || null,
+        request.headers.get('referer')    || null,
+        request.headers.get('cf-ray')     || null,
         cf.botManagement?.score ?? null,
         cf.botManagement?.verifiedBot ? 1 : 0,
         ipHash || null
@@ -65,7 +94,17 @@ export async function onRequest(context) {
     );
   }
 
-  return response;
+  // ── attach security headers to every function response ───────────────────
+  return new Response(response.body, {
+    status:  response.status,
+    headers: withSecHeaders(response.headers),
+  });
+}
+
+function withSecHeaders(existing) {
+  const h = new Headers(existing);
+  for (const [k, v] of Object.entries(SEC_HEADERS)) h.set(k, v);
+  return h;
 }
 
 async function sha256Hex(str) {

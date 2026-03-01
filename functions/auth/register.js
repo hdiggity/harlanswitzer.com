@@ -5,6 +5,18 @@ export async function onRequestPost(context) {
 
   if (!env.db) return json({ error: 'server error' }, 500);
 
+  // rate limit: 3 registration attempts per IP per 15 min
+  const ip     = request.headers.get('cf-connecting-ip') || '';
+  const ipHash = ip ? await sha256Hex((env.IP_HASH_SALT || '') + ip) : 'unknown';
+  const regKey = 'reg:' + ipHash;
+  const now    = Math.floor(Date.now() / 1000);
+  try {
+    const r = await env.db.prepare(
+      'SELECT COUNT(*) AS n FROM login_attempts WHERE ip_hash = ? AND ts > ?'
+    ).bind(regKey, now - 15 * 60).first();
+    if ((r?.n ?? 0) >= 3) return json({ error: 'too many attempts — try again later' }, 429);
+  } catch { /* skip */ }
+
   const existing = await env.db.prepare('SELECT id FROM users LIMIT 1').first();
 
   // First user can be created freely; subsequent ones require an admin session
@@ -41,6 +53,11 @@ export async function onRequestPost(context) {
   ).bind(username, passwordHash, salt, iterations, now).run();
 
   return json({ ok: true }, 201);
+}
+
+async function sha256Hex(str) {
+  const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(str));
+  return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2, '0')).join('');
 }
 
 async function pbkdf2Hex(password, salt, iterations) {
