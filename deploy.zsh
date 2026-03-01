@@ -28,10 +28,7 @@ print "pushing $VER..."
 git push -q
 
 print "deploying..."
-output=$(npx wrangler pages deploy "$DIST" \
+npx wrangler pages deploy "$DIST" \
   --project-name harlanswitzer \
   --branch main \
-  --commit-dirty=true 2>&1)
-
-url=$(print "$output" | grep -o 'https://[^ ]*pages\.dev' | tail -1)
-print "done: $url"
+  --commit-dirty=true
