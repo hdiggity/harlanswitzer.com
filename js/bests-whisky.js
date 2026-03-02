@@ -25,7 +25,12 @@
     DE:'Germany', FI:'Finland', FR:'France', GB:'United Kingdom',
     ZA:'South Africa', MX:'Mexico', CZ:'Czech Republic', NO:'Norway',
     DK:'Denmark', NL:'Netherlands', CH:'Switzerland', IT:'Italy', ES:'Spain',
-    PT:'Portugal', BR:'Brazil', PL:'Poland',
+    PT:'Portugal', BR:'Brazil', PL:'Poland', BE:'Belgium',
+    JM:'Jamaica', PR:'Puerto Rico', GT:'Guatemala', CR:'Costa Rica',
+    CO:'Colombia', PE:'Peru', AR:'Argentina', CL:'Chile', DO:'Dominican Republic',
+    PA:'Panama', AT:'Austria', HR:'Croatia', SK:'Slovakia', HU:'Hungary',
+    RO:'Romania', GR:'Greece', TR:'Turkey', SG:'Singapore', KR:'South Korea',
+    TH:'Thailand', VN:'Vietnam', PH:'Philippines',
   };
 
   function emojiToCountry(s) {
