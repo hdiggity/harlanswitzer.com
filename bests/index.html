@@ -45,6 +45,16 @@
     }
     .hub-link:hover { color: var(--fg); border-color: var(--fg); background: rgba(109,40,217,.04); }
 
+    @media (max-width: 600px) {
+      .hd {
+        padding: 14px max(16px, env(safe-area-inset-right)) 14px max(16px, env(safe-area-inset-left));
+      }
+      .hub {
+        min-height: calc(100dvh - 57px);
+        gap: 24px;
+        padding: 32px 20px;
+      }
+    }
     @media (max-width: 400px) { .hub-nav { flex-direction: column; } .hub-link { width: 100%; } }
   </style>
 </head>

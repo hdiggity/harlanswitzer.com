@@ -158,6 +158,24 @@
     .s2 { color: #16a34a; }
     .s3 { color: #d97706; }
     .s4, .s5 { color: #dc2626; }
+
+    /* ── Mobile / Safari ── */
+    @media (max-width: 640px) {
+      .hd {
+        padding: 12px max(16px, env(safe-area-inset-right)) 12px max(16px, env(safe-area-inset-left));
+        flex-wrap: wrap;
+        gap: 8px;
+      }
+      .hd-right { gap: 8px; flex-wrap: wrap; }
+      .summary { padding: 16px 16px 0; gap: 8px; }
+      .tabs { padding: 16px 16px 0; }
+      .panels { padding: 16px 16px 32px; }
+      .card { padding: 12px 14px; }
+      .card-value { font-size: 22px; }
+      .bar-label { width: 120px; }
+      .tbl-wrap { -webkit-overflow-scrolling: touch; }
+      table { min-width: 480px; }
+    }
   </style>
 </head>
 <body>
