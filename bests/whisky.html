@@ -24,9 +24,8 @@
       display: flex; align-items: center; justify-content: space-between;
       padding: 16px 28px; border-bottom: 1px solid var(--border);
     }
-    .hd-left { display: flex; flex-direction: column; gap: 2px; }
-    .hd-site { font-size: 11px; letter-spacing: .12em; text-transform: uppercase; color: var(--muted); }
-    .hd-title { font-size: 18px; font-weight: 700; letter-spacing: .02em; text-transform: uppercase; }
+    .hd-brand { font-size: 11px; letter-spacing: .12em; text-transform: uppercase; color: var(--muted); text-decoration: none; transition: color 150ms; }
+    .hd-brand:hover { color: var(--fg); }
     .hd-right { display: flex; align-items: center; gap: 12px; }
     .hd-btn {
       background: none; border: 1px solid var(--border); color: var(--muted);
@@ -201,13 +200,9 @@
 </head>
 <body>
   <header class="hd">
-    <div class="hd-left">
-      <span class="hd-site">harlanswitzer.com / bests</span>
-      <span class="hd-title">whisky</span>
-    </div>
+    <a href="/" class="hd-brand">harlanswitzer.com</a>
     <div class="hd-right">
-      <a href="/bests" class="hd-btn">bests</a>
-      <a href="/admin.html" class="hd-btn">home</a>
+      <a href="/bests" class="hd-btn">← back</a>
       <button id="logoutBtn" class="hd-btn">logout</button>
     </div>
   </header>

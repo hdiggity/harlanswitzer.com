@@ -20,7 +20,8 @@
       display: flex; align-items: center; justify-content: space-between;
       padding: 16px 28px; border-bottom: 1px solid var(--border);
     }
-    .hd-site { font-size: 11px; letter-spacing: .12em; text-transform: uppercase; color: var(--muted); }
+    .hd-brand { font-size: 11px; letter-spacing: .12em; text-transform: uppercase; color: var(--muted); text-decoration: none; transition: color 150ms; }
+    .hd-brand:hover { color: var(--fg); }
     .hd-btn {
       background: none; border: 1px solid var(--border); color: var(--muted);
       font-size: 11px; letter-spacing: .1em; text-transform: uppercase;
@@ -51,11 +52,8 @@
 </head>
 <body>
   <header class="hd">
-    <span class="hd-site">harlanswitzer.com / bests</span>
-    <div style="display:flex;gap:8px">
-      <a href="/admin.html" class="hd-btn">home</a>
-      <button id="logoutBtn" class="hd-btn">logout</button>
-    </div>
+    <a href="/" class="hd-brand">harlanswitzer.com</a>
+    <button id="logoutBtn" class="hd-btn">logout</button>
   </header>
 
   <div class="hub" id="hub" style="display:none">
