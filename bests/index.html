@@ -28,6 +28,12 @@
       display: inline-block;
     }
     .hd-btn:hover { color: var(--fg); border-color: var(--fg); }
+    .hd-site {
+      font-size: 11px; letter-spacing: .12em; text-transform: uppercase;
+      color: var(--muted); text-decoration: none; transition: color 150ms;
+    }
+    .hd-site:hover { color: var(--fg); }
+    .hd-right { display: flex; align-items: center; gap: 12px; }
 
     .hub {
       display: flex; flex-direction: column; align-items: center;
@@ -60,8 +66,11 @@
 </head>
 <body>
   <header class="hd">
-    <a href="/" class="hd-btn">← back</a>
-    <button id="logoutBtn" class="hd-btn">logout</button>
+    <a href="/" class="hd-site">harlanswitzer.com</a>
+    <div class="hd-right">
+      <a href="/" class="hd-btn">← back</a>
+      <button id="logoutBtn" class="hd-btn">logout</button>
+    </div>
   </header>
 
   <div class="hub" id="hub" style="display:none">

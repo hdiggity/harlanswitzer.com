@@ -66,7 +66,7 @@
       })
         .then(function (r) {
           if (r.ok) {
-            location.href = '/admin.html';
+            location.href = '/';
           } else {
             return r.text().then(function (text) {
               var msg = 'error ' + r.status;
@@ -127,7 +127,7 @@
               body: JSON.stringify({ username: username, password: password }),
             }).then(function (lr) {
               if (lr.ok) {
-                location.href = '/admin.html';
+                location.href = '/';
               } else {
                 closeSignup();
                 modal.removeAttribute('hidden');

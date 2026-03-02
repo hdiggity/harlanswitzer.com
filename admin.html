@@ -33,7 +33,10 @@
       letter-spacing: .12em;
       text-transform: uppercase;
       color: var(--muted);
+      text-decoration: none;
+      transition: color 150ms;
     }
+    .hd-site:hover { color: var(--fg); }
     .hd-btn {
       background: none;
       border: 1px solid var(--border);
@@ -111,7 +114,7 @@
 </head>
 <body>
   <header class="hd">
-    <span class="hd-site">harlanswitzer.com</span>
+    <a href="/" class="hd-site">harlanswitzer.com</a>
     <button id="logoutBtn" class="hd-btn">logout</button>
   </header>
 

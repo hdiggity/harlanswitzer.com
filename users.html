@@ -22,7 +22,11 @@
       padding: 16px 28px; border-bottom: 1px solid var(--border);
     }
     .hd-left { display: flex; flex-direction: column; gap: 2px; }
-    .hd-site { font-size: 11px; letter-spacing: .12em; text-transform: uppercase; color: var(--muted); }
+    .hd-site {
+      font-size: 11px; letter-spacing: .12em; text-transform: uppercase;
+      color: var(--muted); text-decoration: none; transition: color 150ms;
+    }
+    .hd-site:hover { color: var(--fg); }
     .hd-title { font-size: 18px; font-weight: 700; letter-spacing: .02em; text-transform: uppercase; }
     .hd-right { display: flex; align-items: center; gap: 10px; }
     .hd-btn {
@@ -163,12 +167,12 @@
 <body>
   <header class="hd">
     <div class="hd-left">
-      <span class="hd-site">harlanswitzer.com</span>
+      <a href="/" class="hd-site">harlanswitzer.com</a>
       <span class="hd-title">users</span>
     </div>
     <div class="hd-right">
       <button id="newUserBtn" class="btn-add">+ new user</button>
-      <a href="/admin.html" class="hd-btn">home</a>
+      <a href="/admin.html" class="hd-btn">← back</a>
       <button id="logoutBtn" class="hd-btn">logout</button>
     </div>
   </header>

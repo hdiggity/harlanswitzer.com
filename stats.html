@@ -37,7 +37,10 @@
       letter-spacing: .12em;
       text-transform: uppercase;
       color: var(--muted);
+      text-decoration: none;
+      transition: color 150ms;
     }
+    .hd-site:hover { color: var(--fg); }
     .hd-title {
       font-size: 18px;
       font-weight: 700;
@@ -181,12 +184,11 @@
 <body>
   <header class="hd">
     <div class="hd-left">
-      <span class="hd-site">harlanswitzer.com</span>
+      <a href="/" class="hd-site">harlanswitzer.com</a>
       <span class="hd-title" id="welcomeMsg">stats</span>
     </div>
     <div class="hd-right">
-      <a href="/admin.html" class="hd-btn">home</a>
-      <a href="/users.html" class="hd-btn">users</a>
+      <a href="/admin.html" class="hd-btn">← back</a>
       <button id="logoutBtn" class="hd-btn">logout</button>
     </div>
   </header>
