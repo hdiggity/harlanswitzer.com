@@ -208,7 +208,7 @@
     { id: 'score',      label: 'score'      },
     { id: 'product',    label: 'product'    },
     { id: 'distillery', label: 'distillery' },
-    { id: 'country',    label: 'country'    },
+    { id: 'country',    label: 'country / territory' },
     { id: 'where',      label: 'where'      },
     { id: 'when',       label: 'when'       },
     { id: 'notes',      label: 'notes', nosort: true },
