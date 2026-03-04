@@ -270,8 +270,8 @@
         ? '<span class="score-val" style="color:' + color + '">' + w.score.toFixed(1) + '</span>'
         : '<span class="score-null">—</span>';
       var product = '<strong>' + esc(w.product) + '</strong>';
-      var whereLines = [w.where_name, w.where_city_state, w.where_country].filter(Boolean);
-      var where  = whereLines.length ? whereLines.map(function(l) { return '<span class="cell-faded">' + esc(l) + '</span>'; }).join('') : '';
+      var whereText = [w.where_name, w.where_city_state, w.where_country].filter(Boolean).join(' · ');
+      var where  = whereText ? '<span class="cell-faded">' + esc(whereText) + '</span>' : '';
       var when   = formatWhen(w) ? '<span class="cell-faded">' + esc(formatWhen(w)) + '</span>' : '';
       var flavor = w.flavor ? '<span class="cell-faded">' + esc(w.flavor) + '</span>' : '';
       var notes  = w.notes  ? '<span class="cell-faded">' + esc(w.notes)  + '</span>' : '';

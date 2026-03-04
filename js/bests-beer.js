@@ -271,8 +271,8 @@
         ? '<span class="score-val" style="color:' + color + '">' + b.score.toFixed(1) + '</span>'
         : '<span class="score-null">—</span>';
       var product = '<strong>' + esc(b.product) + '</strong>';
-      var whereLines = [b.where_name, b.where_city_state, b.where_country].filter(Boolean);
-      var where = whereLines.length ? whereLines.map(function(l) { return '<span class="cell-faded">' + esc(l) + '</span>'; }).join('') : '';
+      var whereText = [b.where_name, b.where_city_state, b.where_country].filter(Boolean).join(' · ');
+      var where = whereText ? '<span class="cell-faded">' + esc(whereText) + '</span>' : '';
       var when  = formatWhen(b) ? '<span class="cell-faded">' + esc(formatWhen(b)) + '</span>' : '';
       var notes = b.event_notes ? '<span class="cell-faded">' + esc(b.event_notes) + '</span>' : '';
       return '<tr>' +
