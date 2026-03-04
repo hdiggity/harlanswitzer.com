@@ -511,16 +511,17 @@ async function handlePost(request, env, userId) {
     if (!existing) return json({ error: 'not found' }, 404);
 
     let beerWhenTs;
+    let normalizedUpdates = updates;
     if ('when_text' in updates) {
       const norm = normalizeWhenText(updates.when_text);
-      updates = { ...updates, when_text: norm.when_text };
+      normalizedUpdates = { ...updates, when_text: norm.when_text };
       beerWhenTs = norm.when_ts;
     }
     const EDITABLE = ['brewery', 'product', 'country_territory', 'sub_type',
                       'where_name', 'where_city_state', 'where_country', 'when_text', 'event_notes'];
     const fields = [], vals = [];
     for (const key of EDITABLE) {
-      if (key in updates) { fields.push(key + ' = ?'); vals.push(updates[key] ?? null); }
+      if (key in normalizedUpdates) { fields.push(key + ' = ?'); vals.push(normalizedUpdates[key] ?? null); }
     }
     if (beerWhenTs !== undefined) { fields.push('when_ts = ?'); vals.push(beerWhenTs); }
     if (!fields.length) return json({ error: 'no valid fields' }, 400);

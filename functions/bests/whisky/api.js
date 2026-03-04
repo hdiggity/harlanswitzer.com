@@ -549,16 +549,17 @@ async function handlePost(request, env, userId) {
     if (!existing) return json({ error: 'not found' }, 404);
 
     let whiskyWhenTs;
+    let normalizedUpdates = updates;
     if ('when_text' in updates) {
       const norm = normalizeWhenText(updates.when_text);
-      updates = { ...updates, when_text: norm.when_text };
+      normalizedUpdates = { ...updates, when_text: norm.when_text };
       whiskyWhenTs = norm.when_ts;
     }
     const EDITABLE = ['distillery', 'product', 'country_territory', 'age',
                       'where_name', 'where_city_state', 'where_country', 'when_text', 'flavor', 'notes'];
     const fields = [], vals = [];
     for (const key of EDITABLE) {
-      if (key in updates) { fields.push(key + ' = ?'); vals.push(updates[key] ?? null); }
+      if (key in normalizedUpdates) { fields.push(key + ' = ?'); vals.push(normalizedUpdates[key] ?? null); }
     }
     if (whiskyWhenTs !== undefined) { fields.push('when_ts = ?'); vals.push(whiskyWhenTs); }
 
