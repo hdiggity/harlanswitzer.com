@@ -1,12 +1,12 @@
 /* styles/base.css */
 :root{
   --bg:#ffffff;
-  --fg:#6d28d9;
-  --muted:rgba(109,40,217,.55);
-  --card:rgba(109,40,217,.03);
-  --border:rgba(109,40,217,.10);
-  --shadow:rgba(109,40,217,.08);
-  --glow:rgba(109,40,217,.06);
+  --fg:#483eb1;
+  --muted:rgba(72,62,177,.55);
+  --card:rgba(72,62,177,.03);
+  --border:rgba(72,62,177,.10);
+  --shadow:rgba(72,62,177,.08);
+  --glow:rgba(72,62,177,.06);
   --ease:cubic-bezier(.2,.9,.1,1);
   --radius:28px;
   --pad:clamp(18px, 3vw, 44px);
@@ -108,7 +108,7 @@ body{
   z-index:10;
 }
 .auth-link{
-  color: rgba(109,40,217,.4);
+  color: rgba(72,62,177,.4);
   font-size:11px;
   letter-spacing:.12em;
   text-transform:uppercase;
@@ -117,7 +117,7 @@ body{
   transition: color 200ms;
 }
 .auth-link:hover{
-  color: rgba(109,40,217,.9);
+  color: rgba(72,62,177,.9);
 }
 
 .modal-backdrop{
@@ -134,9 +134,9 @@ body{
 
 .modal-box{
   background: #fff;
-  border:1px solid rgba(109,40,217,.18);
+  border:1px solid rgba(72,62,177,.18);
   border-radius:14px;
-  box-shadow: 0 8px 40px rgba(109,40,217,.12);
+  box-shadow: 0 8px 40px rgba(72,62,177,.12);
   padding:32px 28px 28px;
   width:320px;
   max-width:calc(100vw - 40px);
@@ -153,12 +153,12 @@ body{
   background:none;
   border:none;
   font-size:20px;
-  color: rgba(109,40,217,.4);
+  color: rgba(72,62,177,.4);
   cursor:pointer;
   line-height:1;
   padding:0;
 }
-.modal-close:hover{ color:#6d28d9; }
+.modal-close:hover{ color:#483eb1; }
 
 .modal-box form{
   display:flex;
@@ -169,24 +169,24 @@ body{
   font-size:11px;
   letter-spacing:.1em;
   text-transform:uppercase;
-  color: rgba(109,40,217,.6);
+  color: rgba(72,62,177,.6);
   margin-bottom:2px;
 }
 .modal-box input{
-  border:1px solid rgba(109,40,217,.2);
+  border:1px solid rgba(72,62,177,.2);
   border-radius:8px;
   padding:9px 12px;
   font-size:14px;
-  color:#6d28d9;
+  color:#483eb1;
   background:#fff;
   outline:none;
   font-family:inherit;
 }
-.modal-box input:focus{ border-color:#6d28d9; }
+.modal-box input:focus{ border-color:#483eb1; }
 
 .modal-box button[type="submit"]{
   margin-top:8px;
-  background:#6d28d9;
+  background:#483eb1;
   color:#fff;
   border:none;
   border-radius:8px;
@@ -197,7 +197,7 @@ body{
   font-family:inherit;
   letter-spacing:.04em;
 }
-.modal-box button[type="submit"]:hover{ background:#5b21b6; }
+.modal-box button[type="submit"]:hover{ background:#3b33a0; }
 
 .modal-error{
   font-size:12px;

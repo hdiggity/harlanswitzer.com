@@ -205,6 +205,25 @@
     return beers;
   }
 
+  // ── score color ───────────────────────────────────────────────────────────
+  function scoreColor(score) {
+    if (score == null) return '';
+    var t = Math.max(0, Math.min(10, score)) / 10;
+    var r, g, b;
+    if (t <= 0.5) {
+      var u = t / 0.5;
+      r = Math.round(192 + (192 - 192) * u);
+      g = Math.round(100 + (160 - 100) * u);
+      b = Math.round(100 + (64 - 100) * u);
+    } else {
+      var u = (t - 0.5) / 0.5;
+      r = Math.round(192 + (96 - 192) * u);
+      g = Math.round(160 + (160 - 160) * u);
+      b = Math.round(64 + (96 - 64) * u);
+    }
+    return 'rgb(' + r + ',' + g + ',' + b + ')';
+  }
+
   // ── table render ──────────────────────────────────────────────────────────
   var COLS = [
     { id: 'score',    label: 'score'    },
@@ -247,12 +266,13 @@
       '<th></th></tr></thead>';
 
     var tbody = '<tbody>' + beers.map(function (b) {
+      var color = scoreColor(b.score);
       var score = b.score != null
-        ? '<span class="score-val">' + b.score.toFixed(1) + '</span>'
+        ? '<span class="score-val" style="color:' + color + '">' + b.score.toFixed(1) + '</span>'
         : '<span class="score-null">—</span>';
-      var product = esc(b.product);
-      var whereText = [b.where_name, b.where_city_state, b.where_country].filter(Boolean).join(', ');
-      var where = whereText ? '<span class="cell-notes">' + esc(whereText) + '</span>' : '';
+      var product = '<strong>' + esc(b.product) + '</strong>';
+      var whereLines = [b.where_name, b.where_city_state, b.where_country].filter(Boolean);
+      var where = whereLines.length ? '<span class="cell-notes">' + whereLines.map(esc).join('<br>') + '</span>' : '';
       var notes = b.event_notes ? '<span class="cell-notes">' + esc(b.event_notes) + '</span>' : '';
       return '<tr>' +
         '<td>' + score + '</td>' +

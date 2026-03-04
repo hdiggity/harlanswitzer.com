@@ -203,11 +203,31 @@
     return whiskies;
   }
 
+  // ── score color ───────────────────────────────────────────────────────────
+  function scoreColor(score) {
+    if (score == null) return '';
+    var t = Math.max(0, Math.min(10, score)) / 10;
+    var r, g, b;
+    if (t <= 0.5) {
+      var u = t / 0.5;
+      r = Math.round(192 + (192 - 192) * u);
+      g = Math.round(100 + (160 - 100) * u);
+      b = Math.round(100 + (64 - 100) * u);
+    } else {
+      var u = (t - 0.5) / 0.5;
+      r = Math.round(192 + (96 - 192) * u);
+      g = Math.round(160 + (160 - 160) * u);
+      b = Math.round(64 + (96 - 64) * u);
+    }
+    return 'rgb(' + r + ',' + g + ',' + b + ')';
+  }
+
   // ── table render ──────────────────────────────────────────────────────────
   var COLS = [
     { id: 'score',      label: 'score'      },
     { id: 'product',    label: 'product'    },
     { id: 'distillery', label: 'distillery' },
+    { id: 'age',        label: 'age',   nosort: true },
     { id: 'country',    label: 'country / territory' },
     { id: 'where',      label: 'where'      },
     { id: 'when',       label: 'when'       },
@@ -245,18 +265,20 @@
       '<th></th></tr></thead>';
 
     var tbody = '<tbody>' + whiskies.map(function (w) {
+      var color = scoreColor(w.score);
       var score = w.score != null
-        ? '<span class="score-val">' + w.score.toFixed(1) + '</span>'
+        ? '<span class="score-val" style="color:' + color + '">' + w.score.toFixed(1) + '</span>'
         : '<span class="score-null">—</span>';
-      var product = w.age ? esc(w.product) + '<span class="cell-age"> ' + esc(w.age) + '</span>' : esc(w.product);
-      var whereText = [w.where_name, w.where_city_state, w.where_country].filter(Boolean).join(', ');
-      var where  = whereText ? '<span class="cell-notes">' + esc(whereText) + '</span>' : '';
+      var product = '<strong>' + esc(w.product) + '</strong>';
+      var whereLines = [w.where_name, w.where_city_state, w.where_country].filter(Boolean);
+      var where  = whereLines.length ? '<span class="cell-notes">' + whereLines.map(esc).join('<br>') + '</span>' : '';
       var flavor = w.flavor ? '<span class="cell-notes">' + esc(w.flavor) + '</span>' : '';
       var notes  = w.notes  ? '<span class="cell-notes">' + esc(w.notes)  + '</span>' : '';
       return '<tr>' +
         '<td>' + score + '</td>' +
         '<td>' + product + '</td>' +
         '<td>' + esc(w.distillery) + '</td>' +
+        '<td class="cell-age-col">' + esc(w.age || '') + '</td>' +
         '<td>' + esc(emojiToCountry(w.country_territory || '')) + '</td>' +
         '<td class="cell-notes-col">' + where + '</td>' +
         '<td>' + esc(formatWhen(w)) + '</td>' +

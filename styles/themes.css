@@ -1,15 +1,15 @@
 /* styles/themes.css */
 .app[data-theme="dark"]{
   --bg:#ffffff;
-  --fg:#6d28d9;
-  --card:rgba(109,40,217,.03);
-  --border:rgba(109,40,217,.10);
-  --glow:rgba(109,40,217,.06);
+  --fg:#483eb1;
+  --card:rgba(72,62,177,.03);
+  --border:rgba(72,62,177,.10);
+  --glow:rgba(72,62,177,.06);
 }
 .app[data-theme="print"]{
   --bg:#ffffff;
-  --fg:#6d28d9;
-  --card:rgba(109,40,217,.03);
-  --border:rgba(109,40,217,.10);
-  --glow:rgba(109,40,217,.06);
+  --fg:#483eb1;
+  --card:rgba(72,62,177,.03);
+  --border:rgba(72,62,177,.10);
+  --glow:rgba(72,62,177,.06);
 }
