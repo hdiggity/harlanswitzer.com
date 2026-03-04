@@ -226,6 +226,13 @@
     var listEl = el('beerList');
     if (!listEl) return;
     var beers = filteredAndSorted();
+    var countEl = el('entryCount');
+    if (countEl) {
+      var total = state.allBeers.length;
+      countEl.textContent = beers.length < total
+        ? beers.length + ' / ' + total
+        : total + '';
+    }
     if (!beers.length) {
       listEl.innerHTML = '<p class="notice">no beers match the current filters</p>';
       return;
@@ -244,7 +251,8 @@
         ? '<span class="score-val">' + b.score.toFixed(1) + '</span>'
         : '<span class="score-null">—</span>';
       var product = esc(b.product);
-      var where = [b.where_name, b.where_city_state, b.where_country].filter(Boolean).join(', ');
+      var whereText = [b.where_name, b.where_city_state, b.where_country].filter(Boolean).join(', ');
+      var where = whereText ? '<span class="cell-notes">' + esc(whereText) + '</span>' : '';
       var notes = b.event_notes ? '<span class="cell-notes">' + esc(b.event_notes) + '</span>' : '';
       return '<tr>' +
         '<td>' + score + '</td>' +
@@ -252,7 +260,7 @@
         '<td>' + esc(b.brewery) + '</td>' +
         '<td>' + esc(b.sub_type || '') + '</td>' +
         '<td>' + esc(emojiToCountry(b.country_territory || '')) + '</td>' +
-        '<td>' + esc(where) + '</td>' +
+        '<td class="cell-notes-col">' + where + '</td>' +
         '<td>' + esc(formatWhen(b)) + '</td>' +
         '<td class="cell-notes-col">' + notes + '</td>' +
         '<td><div class="row-actions">' +

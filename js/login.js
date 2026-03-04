@@ -11,10 +11,7 @@
     var signupCloseBtn = document.getElementById('signupModalClose');
     var signupError = document.getElementById('signupError');
 
-    var menuWrap = document.getElementById('menuWrap');
     var menuBtn = document.getElementById('menuBtn');
-    var menuDropdown = document.getElementById('menuDropdown');
-    var menuLogoutBtn = document.getElementById('menuLogoutBtn');
 
     if (!btn || !modal) return;
 
@@ -25,7 +22,7 @@
         if (d.loggedIn) {
           btn.style.display = 'none';
           if (signupBtn) signupBtn.style.display = 'none';
-          if (menuWrap) menuWrap.style.display = '';
+          if (menuBtn) menuBtn.style.display = '';
         }
       })
       .catch(function () {});
@@ -82,30 +79,6 @@
           if (errorMsg) errorMsg.textContent = err && err.message ? err.message : 'network error';
         });
     });
-
-    // menu toggle
-    if (menuBtn && menuDropdown) {
-      menuBtn.addEventListener('click', function (e) {
-        e.preventDefault();
-        e.stopPropagation();
-        if (menuDropdown.hasAttribute('hidden')) {
-          menuDropdown.removeAttribute('hidden');
-        } else {
-          menuDropdown.setAttribute('hidden', '');
-        }
-      });
-      document.addEventListener('click', function (e) {
-        if (menuWrap && !menuWrap.contains(e.target)) {
-          menuDropdown.setAttribute('hidden', '');
-        }
-      });
-    }
-
-    if (menuLogoutBtn) {
-      menuLogoutBtn.addEventListener('click', function () {
-        fetch('/auth/logout', { method: 'POST' }).then(function () { location.href = '/'; });
-      });
-    }
 
     // signup
     if (!signupBtn || !signupModal || !signupForm) return;

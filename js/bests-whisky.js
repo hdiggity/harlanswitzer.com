@@ -224,6 +224,13 @@
     var listEl = el('whiskyList');
     if (!listEl) return;
     var whiskies = filteredAndSorted();
+    var countEl = el('entryCount');
+    if (countEl) {
+      var total = state.allWhiskies.length;
+      countEl.textContent = whiskies.length < total
+        ? whiskies.length + ' / ' + total
+        : total + '';
+    }
     if (!whiskies.length) {
       listEl.innerHTML = '<p class="notice">no whiskies match the current filters</p>';
       return;
@@ -242,7 +249,8 @@
         ? '<span class="score-val">' + w.score.toFixed(1) + '</span>'
         : '<span class="score-null">—</span>';
       var product = w.age ? esc(w.product) + '<span class="cell-age"> ' + esc(w.age) + '</span>' : esc(w.product);
-      var where = [w.where_name, w.where_city_state, w.where_country].filter(Boolean).join(', ');
+      var whereText = [w.where_name, w.where_city_state, w.where_country].filter(Boolean).join(', ');
+      var where  = whereText ? '<span class="cell-notes">' + esc(whereText) + '</span>' : '';
       var flavor = w.flavor ? '<span class="cell-notes">' + esc(w.flavor) + '</span>' : '';
       var notes  = w.notes  ? '<span class="cell-notes">' + esc(w.notes)  + '</span>' : '';
       return '<tr>' +
@@ -250,7 +258,7 @@
         '<td>' + product + '</td>' +
         '<td>' + esc(w.distillery) + '</td>' +
         '<td>' + esc(emojiToCountry(w.country_territory || '')) + '</td>' +
-        '<td>' + esc(where) + '</td>' +
+        '<td class="cell-notes-col">' + where + '</td>' +
         '<td>' + esc(formatWhen(w)) + '</td>' +
         '<td class="cell-notes-col">' + flavor + '</td>' +
         '<td class="cell-notes-col">' + notes  + '</td>' +
