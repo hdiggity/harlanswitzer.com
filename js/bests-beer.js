@@ -271,18 +271,18 @@
         ? '<span class="score-val" style="color:' + color + '">' + b.score.toFixed(1) + '</span>'
         : '<span class="score-null">—</span>';
       var product = '<strong>' + esc(b.product) + '</strong>';
-      var brewery = '<strong>' + esc(b.brewery) + '</strong>';
       var whereLines = [b.where_name, b.where_city_state, b.where_country].filter(Boolean);
-      var where = whereLines.length ? whereLines.map(function(l) { return '<span class="cell-where-line">' + esc(l) + '</span>'; }).join('') : '';
-      var notes = b.event_notes ? '<span class="cell-notes">' + esc(b.event_notes) + '</span>' : '';
+      var where = whereLines.length ? whereLines.map(function(l) { return '<span class="cell-faded">' + esc(l) + '</span>'; }).join('') : '';
+      var when  = formatWhen(b) ? '<span class="cell-faded">' + esc(formatWhen(b)) + '</span>' : '';
+      var notes = b.event_notes ? '<span class="cell-faded">' + esc(b.event_notes) + '</span>' : '';
       return '<tr>' +
         '<td>' + score + '</td>' +
         '<td>' + product + '</td>' +
-        '<td>' + brewery + '</td>' +
+        '<td>' + esc(b.brewery) + '</td>' +
         '<td>' + esc(b.sub_type || '') + '</td>' +
         '<td>' + esc(emojiToCountry(b.country_territory || '')) + '</td>' +
         '<td class="cell-notes-col">' + where + '</td>' +
-        '<td>' + esc(formatWhen(b)) + '</td>' +
+        '<td>' + when + '</td>' +
         '<td class="cell-notes-col">' + notes + '</td>' +
         '<td><div class="row-actions">' +
           '<button class="btn-edit"   data-id="' + b.id + '">edit</button>' +

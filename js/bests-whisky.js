@@ -270,20 +270,19 @@
         ? '<span class="score-val" style="color:' + color + '">' + w.score.toFixed(1) + '</span>'
         : '<span class="score-null">—</span>';
       var product = '<strong>' + esc(w.product) + '</strong>';
-      var distillery = '<strong>' + esc(w.distillery) + '</strong>';
-      var age = w.age ? '<strong>' + esc(w.age) + '</strong>' : '';
       var whereLines = [w.where_name, w.where_city_state, w.where_country].filter(Boolean);
-      var where  = whereLines.length ? whereLines.map(function(l) { return '<span class="cell-where-line">' + esc(l) + '</span>'; }).join('') : '';
-      var flavor = w.flavor ? '<span class="cell-notes">' + esc(w.flavor) + '</span>' : '';
-      var notes  = w.notes  ? '<span class="cell-notes">' + esc(w.notes)  + '</span>' : '';
+      var where  = whereLines.length ? whereLines.map(function(l) { return '<span class="cell-faded">' + esc(l) + '</span>'; }).join('') : '';
+      var when   = formatWhen(w) ? '<span class="cell-faded">' + esc(formatWhen(w)) + '</span>' : '';
+      var flavor = w.flavor ? '<span class="cell-faded">' + esc(w.flavor) + '</span>' : '';
+      var notes  = w.notes  ? '<span class="cell-faded">' + esc(w.notes)  + '</span>' : '';
       return '<tr>' +
         '<td>' + score + '</td>' +
         '<td>' + product + '</td>' +
-        '<td>' + distillery + '</td>' +
-        '<td class="cell-age-col">' + age + '</td>' +
+        '<td>' + esc(w.distillery) + '</td>' +
+        '<td class="cell-age-col">' + esc(w.age || '') + '</td>' +
         '<td>' + esc(emojiToCountry(w.country_territory || '')) + '</td>' +
         '<td class="cell-notes-col">' + where + '</td>' +
-        '<td>' + esc(formatWhen(w)) + '</td>' +
+        '<td>' + when + '</td>' +
         '<td class="cell-notes-col">' + flavor + '</td>' +
         '<td class="cell-notes-col">' + notes  + '</td>' +
         '<td><div class="row-actions">' +
