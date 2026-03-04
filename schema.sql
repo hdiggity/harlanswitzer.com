@@ -125,6 +125,7 @@ CREATE TABLE IF NOT EXISTS bests_whiskies (
   where_country     TEXT,
   when_text         TEXT,
   when_ts           INTEGER,
+  flavor            TEXT,
   notes             TEXT,
   rank_index        INTEGER,
   score             REAL,

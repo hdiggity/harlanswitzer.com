@@ -30,7 +30,7 @@
     CO:'Colombia', PE:'Peru', AR:'Argentina', CL:'Chile', DO:'Dominican Republic',
     PA:'Panama', AT:'Austria', HR:'Croatia', SK:'Slovakia', HU:'Hungary',
     RO:'Romania', GR:'Greece', TR:'Turkey', SG:'Singapore', KR:'South Korea',
-    TH:'Thailand', VN:'Vietnam', PH:'Philippines',
+    TH:'Thailand', VN:'Vietnam', PH:'Philippines', CN:'China',
   };
 
   function emojiToCountry(s) {
@@ -211,7 +211,8 @@
     { id: 'country',    label: 'country / territory' },
     { id: 'where',      label: 'where'      },
     { id: 'when',       label: 'when'       },
-    { id: 'notes',      label: 'notes', nosort: true },
+    { id: 'flavor',     label: 'flavor', nosort: true },
+    { id: 'notes',      label: 'notes',  nosort: true },
   ];
 
   function arrow(col) {
@@ -240,9 +241,10 @@
       var score = w.score != null
         ? '<span class="score-val">' + w.score.toFixed(1) + '</span>'
         : '<span class="score-null">—</span>';
-      var product = esc(w.product) + (w.age ? '<div class="cell-sub">' + esc(w.age) + '</div>' : '');
+      var product = w.age ? esc(w.product) + '<span class="cell-age"> ' + esc(w.age) + '</span>' : esc(w.product);
       var where = [w.where_name, w.where_city_state, w.where_country].filter(Boolean).join(', ');
-      var notes = w.notes ? '<span class="cell-notes">' + esc(w.notes) + '</span>' : '';
+      var flavor = w.flavor ? '<span class="cell-notes">' + esc(w.flavor) + '</span>' : '';
+      var notes  = w.notes  ? '<span class="cell-notes">' + esc(w.notes)  + '</span>' : '';
       return '<tr>' +
         '<td>' + score + '</td>' +
         '<td>' + product + '</td>' +
@@ -250,7 +252,8 @@
         '<td>' + esc(emojiToCountry(w.country_territory || '')) + '</td>' +
         '<td>' + esc(where) + '</td>' +
         '<td>' + esc(formatWhen(w)) + '</td>' +
-        '<td class="cell-notes-col">' + notes + '</td>' +
+        '<td class="cell-notes-col">' + flavor + '</td>' +
+        '<td class="cell-notes-col">' + notes  + '</td>' +
         '<td><div class="row-actions">' +
           '<button class="btn-edit"   data-id="' + w.id + '">edit</button>' +
           '<button class="btn-remove" data-id="' + w.id + '">remove</button>' +
@@ -300,6 +303,7 @@
     el('e-where-city').value    = whisky.where_city_state || '';
     el('e-where-country').value = whisky.where_country || '';
     el('e-when').value          = whisky.when_text || '';
+    el('e-flavor').value        = whisky.flavor || '';
     el('e-notes').value         = whisky.notes || '';
     el('editSaveStatus').textContent = '';
     el('editModal').removeAttribute('hidden');
@@ -330,6 +334,7 @@
       where_city_state:  el('e-where-city').value.trim() || null,
       where_country:     el('e-where-country').value.trim() || null,
       when_text:         el('e-when').value.trim() || null,
+      flavor:            el('e-flavor').value.trim() || null,
       notes:             el('e-notes').value.trim() || null,
     };
     var res = await api('POST', { action: 'update_whisky', whisky_id: editingWhiskyId, updates: updates });
@@ -476,6 +481,7 @@
         where_city_state:  el('f-where-city').value.trim() || null,
         where_country:     el('f-where-country').value.trim() || null,
         when_text:         el('f-when').value.trim() || null,
+        flavor:            el('f-flavor').value.trim() || null,
         notes:             el('f-notes').value.trim() || null,
       };
       var res = await api('POST', { action: 'create_whisky', whisky: whisky });
@@ -499,7 +505,7 @@
     el('editCancel').addEventListener('click', closeEditModal);
     el('editRerank').addEventListener('click', rerankWhisky);
     ['e-distillery','e-product','e-type','e-age','e-country',
-     'e-where-name','e-where-city','e-where-country','e-when','e-notes'].forEach(function (id) {
+     'e-where-name','e-where-city','e-where-country','e-when','e-flavor','e-notes'].forEach(function (id) {
       var input = el(id);
       if (input) input.addEventListener('input', scheduleAutoSave);
     });

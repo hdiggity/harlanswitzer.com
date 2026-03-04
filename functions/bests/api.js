@@ -451,6 +451,7 @@ async function handlePost(request, env, userId) {
       "UPDATE bests_rank_sessions SET status = 'cancelled', updated_at = ? WHERE created_by = ? AND status = 'active'"
     ).bind(now, userId).run();
 
+    const { when_text: bWhenText, when_ts: bWhenTs } = normalizeWhenText(b.when_text || '');
     const result = await env.db.prepare(`
       INSERT INTO bests_beers
         (brewery, product, country_territory, type, sub_type,
@@ -461,7 +462,7 @@ async function handlePost(request, env, userId) {
       brewery, product,
       b.country_territory || null, type, b.sub_type || null,
       b.where_name || null, b.where_city_state || null, b.where_country || null,
-      b.when_text || null, parseWhenTs(b.when_text || null), b.event_notes || null,
+      bWhenText, bWhenTs, b.event_notes || null,
       userId, now, now
     ).run();
 
@@ -509,13 +510,19 @@ async function handlePost(request, env, userId) {
     const existing = await env.db.prepare('SELECT * FROM bests_beers WHERE id = ?').bind(beer_id).first();
     if (!existing) return json({ error: 'not found' }, 404);
 
+    let beerWhenTs;
+    if ('when_text' in updates) {
+      const norm = normalizeWhenText(updates.when_text);
+      updates = { ...updates, when_text: norm.when_text };
+      beerWhenTs = norm.when_ts;
+    }
     const EDITABLE = ['brewery', 'product', 'country_territory', 'sub_type',
                       'where_name', 'where_city_state', 'where_country', 'when_text', 'event_notes'];
     const fields = [], vals = [];
     for (const key of EDITABLE) {
       if (key in updates) { fields.push(key + ' = ?'); vals.push(updates[key] ?? null); }
     }
-    if ('when_text' in updates) { fields.push('when_ts = ?'); vals.push(parseWhenTs(updates.when_text)); }
+    if (beerWhenTs !== undefined) { fields.push('when_ts = ?'); vals.push(beerWhenTs); }
     if (!fields.length) return json({ error: 'no valid fields' }, 400);
 
     await logHistory(env, beer_id, 'update', existing, userId);

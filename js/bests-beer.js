@@ -30,7 +30,7 @@
     CO:'Colombia', PE:'Peru', AR:'Argentina', CL:'Chile', DO:'Dominican Republic',
     PA:'Panama', AT:'Austria', HR:'Croatia', SK:'Slovakia', HU:'Hungary',
     RO:'Romania', GR:'Greece', TR:'Turkey', SG:'Singapore', KR:'South Korea',
-    TH:'Thailand', VN:'Vietnam', PH:'Philippines',
+    TH:'Thailand', VN:'Vietnam', PH:'Philippines', CN:'China',
   };
 
   function stripEmoji(s) {

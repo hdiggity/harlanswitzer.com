@@ -57,6 +57,7 @@ async function ensureTables(env) {
         where_country     TEXT,
         when_text         TEXT,
         when_ts           INTEGER,
+        flavor            TEXT,
         notes             TEXT,
         rank_index        INTEGER,
         score             REAL,
@@ -65,6 +66,9 @@ async function ensureTables(env) {
         updated_at        INTEGER NOT NULL
       )
     `).run();
+    // migrations: rename old notes column to flavor, add new notes column
+    try { await env.db.prepare('ALTER TABLE bests_whiskies RENAME COLUMN notes TO flavor').run(); } catch {}
+    try { await env.db.prepare('ALTER TABLE bests_whiskies ADD COLUMN notes TEXT').run(); } catch {}
     await env.db.prepare(`
       CREATE TABLE IF NOT EXISTS bests_whisky_rank_sessions (
         id                  TEXT PRIMARY KEY,
@@ -194,7 +198,7 @@ async function seedFromSheet(env, userId) {
   const iWhereCityState = colFirst('where (city, state)', 'where (city,state)', 'where (city/state)', 'city/state', 'city');
   const iWhereCountry  = colFirst('where (country)', 'where country');
   const iWhen          = colFirst('when', 'date');
-  const iNotes         = colFirst('notes', 'event notes');
+  const iFlavor        = colFirst('flavor', 'notes', 'event notes');
   const iRating        = colFirst('rating', 'score');
 
   if (iDistillery < 0 || iProduct < 0 || iType < 0) return;
@@ -216,7 +220,7 @@ async function seedFromSheet(env, userId) {
       where_city_state:  iWhereCityState >= 0 ? (cols[iWhereCityState] || '').trim() || null : null,
       where_country:     iWhereCountry >= 0  ? (cols[iWhereCountry] || '').trim()    || null : null,
       when_text:         iWhen >= 0          ? (cols[iWhen] || '').trim()            || null : null,
-      notes:             iNotes >= 0         ? (cols[iNotes] || '').trim()           || null : null,
+      flavor:            iFlavor >= 0        ? (cols[iFlavor] || '').trim()          || null : null,
       when_ts:           iWhen >= 0          ? parseWhenTs((cols[iWhen] || '').trim()) : null,
       rating: isNaN(rating) ? -Infinity : rating,
     });
@@ -237,12 +241,12 @@ async function seedFromSheet(env, userId) {
       await env.db.prepare(`
         INSERT INTO bests_whiskies
           (distillery, product, country_territory, age, type,
-           where_name, where_city_state, where_country, when_text, when_ts, notes,
+           where_name, where_city_state, where_country, when_text, when_ts, flavor,
            rank_index, score, created_by, created_at, updated_at)
         VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
       `).bind(
         r.distillery, r.product, r.country_territory, r.age, r.type,
-        r.where_name, r.where_city_state, r.where_country, r.when_text, r.when_ts, r.notes,
+        r.where_name, r.where_city_state, r.where_country, r.when_text, r.when_ts, r.flavor,
         i, computeScore(i, n), userId, now, now
       ).run();
     }
@@ -305,7 +309,7 @@ async function syncFromSheet(env) {
   const iWhereCityState = colFirst('where (city, state)', 'where (city,state)', 'where (city/state)', 'city/state', 'city');
   const iWhereCountry   = colFirst('where (country)', 'where country');
   const iWhen           = colFirst('when', 'date');
-  const iNotes          = colFirst('notes', 'event notes');
+  const iFlavor         = colFirst('flavor', 'notes', 'event notes');
 
   if (iDistillery < 0 || iProduct < 0) return;
 
@@ -324,7 +328,7 @@ async function syncFromSheet(env) {
     const whereCountry = v(iWhereCountry);
     const whenText = v(iWhen);
     const whenTs   = parseWhenTs(whenText);
-    const notes    = v(iNotes);
+    const flavor   = v(iFlavor);
 
     await env.db.prepare(`
       UPDATE bests_whiskies SET
@@ -335,12 +339,12 @@ async function syncFromSheet(env) {
         where_country     = COALESCE(where_country, ?),
         when_text         = COALESCE(when_text, ?),
         when_ts           = COALESCE(when_ts, ?),
-        notes             = COALESCE(notes, ?),
+        flavor            = COALESCE(flavor, ?),
         updated_at        = ?
       WHERE LOWER(distillery) = LOWER(?) AND LOWER(product) = LOWER(?)
     `).bind(
       country, age, whereName, whereCityState, whereCountry,
-      whenText, whenTs, notes, now, distillery, product
+      whenText, whenTs, flavor, now, distillery, product
     ).run().catch(() => {});
   }
 }
@@ -485,17 +489,18 @@ async function handlePost(request, env, userId) {
       "UPDATE bests_whisky_rank_sessions SET status = 'cancelled', updated_at = ? WHERE created_by = ? AND status = 'active'"
     ).bind(now, userId).run();
 
+    const { when_text: wWhenText, when_ts: wWhenTs } = normalizeWhenText(w.when_text || '');
     const result = await env.db.prepare(`
       INSERT INTO bests_whiskies
         (distillery, product, country_territory, age, type,
-         where_name, where_city_state, where_country, when_text, when_ts, notes,
+         where_name, where_city_state, where_country, when_text, when_ts, flavor, notes,
          rank_index, score, created_by, created_at, updated_at)
-      VALUES (?,?,?,?,?,?,?,?,?,?,?,NULL,NULL,?,?,?)
+      VALUES (?,?,?,?,?,?,?,?,?,?,?,?,NULL,NULL,?,?,?)
     `).bind(
       distillery, product,
       w.country_territory || null, w.age || null, type,
       w.where_name || null, w.where_city_state || null, w.where_country || null,
-      w.when_text || null, parseWhenTs(w.when_text || null), w.notes || null,
+      wWhenText, wWhenTs, w.flavor || null, w.notes || null,
       userId, now, now
     ).run();
 
@@ -543,13 +548,19 @@ async function handlePost(request, env, userId) {
     const existing = await env.db.prepare('SELECT * FROM bests_whiskies WHERE id = ?').bind(whisky_id).first();
     if (!existing) return json({ error: 'not found' }, 404);
 
+    let whiskyWhenTs;
+    if ('when_text' in updates) {
+      const norm = normalizeWhenText(updates.when_text);
+      updates = { ...updates, when_text: norm.when_text };
+      whiskyWhenTs = norm.when_ts;
+    }
     const EDITABLE = ['distillery', 'product', 'country_territory', 'age',
-                      'where_name', 'where_city_state', 'where_country', 'when_text', 'notes'];
+                      'where_name', 'where_city_state', 'where_country', 'when_text', 'flavor', 'notes'];
     const fields = [], vals = [];
     for (const key of EDITABLE) {
       if (key in updates) { fields.push(key + ' = ?'); vals.push(updates[key] ?? null); }
     }
-    if ('when_text' in updates) { fields.push('when_ts = ?'); vals.push(parseWhenTs(updates.when_text)); }
+    if (whiskyWhenTs !== undefined) { fields.push('when_ts = ?'); vals.push(whiskyWhenTs); }
 
     const typeChanging = 'type' in updates && updates.type && updates.type !== existing.type;
     if (typeChanging) { fields.push('type = ?'); vals.push(updates.type); }
