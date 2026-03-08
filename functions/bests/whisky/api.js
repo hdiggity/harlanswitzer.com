@@ -349,6 +349,43 @@ async function syncFromSheet(env) {
   }
 }
 
+// ── similarity-based candidate picker ────────────────────────────────────────
+
+function parseAge(s) {
+  if (!s) return null;
+  const m = String(s).match(/(\d+)/);
+  return m ? parseInt(m[1], 10) : null;
+}
+
+async function pickCandidateWhisky(env, newWhisky, type, low, high) {
+  const rows = await env.db.prepare(
+    'SELECT * FROM bests_whiskies WHERE type = ? AND id != ? AND rank_index >= ? AND rank_index < ? ORDER BY rank_index ASC'
+  ).bind(type, newWhisky.id, low, high).all();
+  const items = rows.results || [];
+  if (!items.length) return null;
+  const mid = Math.floor((low + high) / 2);
+  const newAge = parseAge(newWhisky.age);
+  function sim(c) {
+    let s = 0;
+    const cAge = parseAge(c.age);
+    if (newAge !== null && cAge !== null) {
+      const diff = Math.abs(newAge - cAge);
+      if (diff === 0) s += 4;
+      else if (diff <= 2) s += 3;
+      else if (diff <= 5) s += 1;
+    }
+    if (newWhisky.where_name && c.where_name && newWhisky.where_name.toLowerCase() === c.where_name.toLowerCase()) s += 2;
+    if (newWhisky.where_city_state && c.where_city_state && newWhisky.where_city_state.toLowerCase() === c.where_city_state.toLowerCase()) s += 2;
+    if (newWhisky.country_territory && c.country_territory && newWhisky.country_territory.toLowerCase() === c.country_territory.toLowerCase()) s += 1;
+    return s;
+  }
+  items.sort((a, b) => {
+    const d = sim(b) - sim(a);
+    return d !== 0 ? d : Math.abs(a.rank_index - mid) - Math.abs(b.rank_index - mid);
+  });
+  return items[0];
+}
+
 // ── binary-search ranking ─────────────────────────────────────────────────────
 
 async function startRankSession(env, newWhisky, userId) {
@@ -365,10 +402,7 @@ async function startRankSession(env, newWhisky, userId) {
     return { completed: true, insertion_index: 0 };
   }
 
-  const mid = Math.floor(n / 2);
-  const candidate = await env.db.prepare(
-    'SELECT * FROM bests_whiskies WHERE type = ? AND id != ? ORDER BY rank_index ASC LIMIT 1 OFFSET ?'
-  ).bind(newWhisky.type, newWhisky.id, mid).first();
+  const candidate = await pickCandidateWhisky(env, newWhisky, newWhisky.type, 0, n);
 
   const sessionId = crypto.randomUUID();
   await env.db.prepare(`
@@ -383,7 +417,12 @@ async function startRankSession(env, newWhisky, userId) {
 async function advanceSession(env, session, winner) {
   const now = Math.floor(Date.now() / 1000);
   let { low_index: low, high_index: high } = session;
-  const mid = Math.floor((low + high) / 2);
+
+  // use the actual rank_index of the chosen candidate as the pivot
+  const pivotRow = await env.db.prepare(
+    'SELECT rank_index FROM bests_whiskies WHERE id = ?'
+  ).bind(session.candidate_whisky_id).first();
+  const pivot = pivotRow?.rank_index ?? Math.floor((low + high) / 2);
 
   await env.db.prepare(
     'INSERT INTO bests_whisky_rank_choices (session_id, candidate_whisky_id, winner_whisky_id, created_at) VALUES (?,?,?,?)'
@@ -394,7 +433,7 @@ async function advanceSession(env, session, winner) {
     now
   ).run();
 
-  if (winner === 'new') high = mid; else low = mid + 1;
+  if (winner === 'new') high = pivot; else low = pivot + 1;
 
   if (low === high) {
     const insertionIndex = low;
@@ -412,10 +451,8 @@ async function advanceSession(env, session, winner) {
     return { completed: true, insertion_index: insertionIndex };
   }
 
-  const newMid = Math.floor((low + high) / 2);
-  const candidate = await env.db.prepare(
-    'SELECT * FROM bests_whiskies WHERE type = ? AND id != ? ORDER BY rank_index ASC LIMIT 1 OFFSET ?'
-  ).bind(session.whisky_type, session.new_whisky_id, newMid).first();
+  const newWhisky = await env.db.prepare('SELECT * FROM bests_whiskies WHERE id = ?').bind(session.new_whisky_id).first();
+  const candidate = await pickCandidateWhisky(env, newWhisky, session.whisky_type, low, high);
   await env.db.prepare(`
     UPDATE bests_whisky_rank_sessions SET low_index = ?, high_index = ?, candidate_whisky_id = ?, updated_at = ? WHERE id = ?
   `).bind(low, high, candidate?.id ?? null, now, session.id).run();
@@ -640,6 +677,33 @@ async function handlePost(request, env, userId) {
     }
     const updated = await env.db.prepare('SELECT * FROM bests_whiskies WHERE id = ?').bind(whisky_id).first();
     return json({ created_whisky: updated, session_id: outcome.session_id, next_comparison: { candidate: outcome.candidate } });
+  }
+
+  if (action === 'reorder_whisky') {
+    const { whisky_id, new_rank_index } = body;
+    if (whisky_id == null || new_rank_index == null) return json({ error: 'whisky_id and new_rank_index required' }, 400);
+    const whisky = await env.db.prepare('SELECT * FROM bests_whiskies WHERE id = ?').bind(whisky_id).first();
+    if (!whisky) return json({ error: 'not found' }, 404);
+    const oldIdx = whisky.rank_index;
+    if (oldIdx == null || oldIdx === new_rank_index) return json({ ok: true });
+    const countRow = await env.db.prepare(
+      'SELECT COUNT(*) AS cnt FROM bests_whiskies WHERE type = ?'
+    ).bind(whisky.type).first();
+    const n = (countRow?.cnt ?? 1) - 1;
+    const newIdx = Math.max(0, Math.min(n, new_rank_index));
+    const now = Math.floor(Date.now() / 1000);
+    if (newIdx > oldIdx) {
+      await env.db.prepare(
+        'UPDATE bests_whiskies SET rank_index = rank_index - 1, updated_at = ? WHERE type = ? AND id != ? AND rank_index > ? AND rank_index <= ?'
+      ).bind(now, whisky.type, whisky_id, oldIdx, newIdx).run();
+    } else {
+      await env.db.prepare(
+        'UPDATE bests_whiskies SET rank_index = rank_index + 1, updated_at = ? WHERE type = ? AND id != ? AND rank_index >= ? AND rank_index < ?'
+      ).bind(now, whisky.type, whisky_id, newIdx, oldIdx).run();
+    }
+    await env.db.prepare('UPDATE bests_whiskies SET rank_index = ?, updated_at = ? WHERE id = ?').bind(newIdx, now, whisky_id).run();
+    await recomputeTypeScores(env, whisky.type);
+    return json({ ok: true });
   }
 
   if (action === 'export') {

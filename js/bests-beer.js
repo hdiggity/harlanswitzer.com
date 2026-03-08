@@ -267,13 +267,14 @@
       var score = b.score != null
         ? '<span class="score-val" style="color:' + color + '">' + b.score.toFixed(1) + '</span>'
         : '<span class="score-null">—</span>';
-      return '<tr>' +
+      return '<tr draggable="true" data-id="' + b.id + '" data-rank="' + b.rank_index + '">' +
         '<td>' + score + '</td>' +
         '<td><button class="btn-detail" data-id="' + b.id + '">' + esc(b.product) + '</button></td>' +
         '<td>' + esc(b.brewery) + '</td>' +
         '<td>' + esc(b.sub_type || '') + '</td>' +
         '<td>' + esc(emojiToCountry(b.country_territory || '')) + '</td>' +
         '<td><div class="row-actions">' +
+          '<span class="drag-handle" title="drag to reorder">⠿</span>' +
           '<button class="btn-remove" data-id="' + b.id + '">remove</button>' +
         '</div></td>' +
         '</tr>';
@@ -304,6 +305,41 @@
     listEl.querySelectorAll('.btn-remove').forEach(function (btn) {
       btn.addEventListener('click', function () { deleteBeer(parseInt(btn.dataset.id, 10)); });
     });
+
+    // drag-to-reorder
+    var dragSrcId = null;
+    listEl.querySelectorAll('tr[draggable]').forEach(function (row) {
+      row.addEventListener('dragstart', function (e) {
+        dragSrcId = parseInt(row.dataset.id, 10);
+        row.classList.add('dragging');
+        e.dataTransfer.effectAllowed = 'move';
+      });
+      row.addEventListener('dragend', function () {
+        row.classList.remove('dragging');
+        listEl.querySelectorAll('tr.drag-over').forEach(function (r) { r.classList.remove('drag-over'); });
+      });
+      row.addEventListener('dragover', function (e) {
+        e.preventDefault();
+        e.dataTransfer.dropEffect = 'move';
+        listEl.querySelectorAll('tr.drag-over').forEach(function (r) { r.classList.remove('drag-over'); });
+        row.classList.add('drag-over');
+      });
+      row.addEventListener('drop', function (e) {
+        e.preventDefault();
+        row.classList.remove('drag-over');
+        var targetId = parseInt(row.dataset.id, 10);
+        if (!dragSrcId || dragSrcId === targetId) return;
+        var newRank = parseInt(row.dataset.rank, 10);
+        reorderBeer(dragSrcId, newRank);
+      });
+    });
+  }
+
+  // ── reorder ───────────────────────────────────────────────────────────────
+  async function reorderBeer(beerId, newRankIndex) {
+    var res = await api('POST', { action: 'reorder_beer', beer_id: beerId, new_rank_index: newRankIndex });
+    if (res.status === 401) { location.href = '/'; return; }
+    await loadData();
   }
 
   // ── detail modal ──────────────────────────────────────────────────────────

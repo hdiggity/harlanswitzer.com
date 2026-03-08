@@ -310,6 +310,30 @@ function parseCSVRow(line) {
   return cols;
 }
 
+// ── similarity-based candidate picker ────────────────────────────────────────
+
+async function pickCandidateBeer(env, newBeer, type, low, high) {
+  const rows = await env.db.prepare(
+    'SELECT * FROM bests_beers WHERE type = ? AND id != ? AND rank_index >= ? AND rank_index < ? ORDER BY rank_index ASC'
+  ).bind(type, newBeer.id, low, high).all();
+  const items = rows.results || [];
+  if (!items.length) return null;
+  const mid = Math.floor((low + high) / 2);
+  function sim(c) {
+    let s = 0;
+    if (newBeer.sub_type && c.sub_type && newBeer.sub_type.toLowerCase() === c.sub_type.toLowerCase()) s += 4;
+    if (newBeer.where_name && c.where_name && newBeer.where_name.toLowerCase() === c.where_name.toLowerCase()) s += 2;
+    if (newBeer.where_city_state && c.where_city_state && newBeer.where_city_state.toLowerCase() === c.where_city_state.toLowerCase()) s += 2;
+    if (newBeer.country_territory && c.country_territory && newBeer.country_territory.toLowerCase() === c.country_territory.toLowerCase()) s += 1;
+    return s;
+  }
+  items.sort((a, b) => {
+    const d = sim(b) - sim(a);
+    return d !== 0 ? d : Math.abs(a.rank_index - mid) - Math.abs(b.rank_index - mid);
+  });
+  return items[0];
+}
+
 // ── binary-search ranking ─────────────────────────────────────────────────────
 
 async function startRankSession(env, newBeer, userId) {
@@ -326,10 +350,7 @@ async function startRankSession(env, newBeer, userId) {
     return { completed: true, insertion_index: 0 };
   }
 
-  const mid = Math.floor(n / 2);
-  const candidate = await env.db.prepare(
-    'SELECT * FROM bests_beers WHERE type = ? AND id != ? ORDER BY rank_index ASC LIMIT 1 OFFSET ?'
-  ).bind(newBeer.type, newBeer.id, mid).first();
+  const candidate = await pickCandidateBeer(env, newBeer, newBeer.type, 0, n);
 
   const sessionId = crypto.randomUUID();
   await env.db.prepare(`
@@ -344,7 +365,12 @@ async function startRankSession(env, newBeer, userId) {
 async function advanceSession(env, session, winner) {
   const now = Math.floor(Date.now() / 1000);
   let { low_index: low, high_index: high } = session;
-  const mid = Math.floor((low + high) / 2);
+
+  // use the actual rank_index of the chosen candidate as the pivot
+  const pivotRow = await env.db.prepare(
+    'SELECT rank_index FROM bests_beers WHERE id = ?'
+  ).bind(session.candidate_beer_id).first();
+  const pivot = pivotRow?.rank_index ?? Math.floor((low + high) / 2);
 
   await env.db.prepare(
     'INSERT INTO bests_rank_choices (session_id, candidate_beer_id, winner_beer_id, created_at) VALUES (?,?,?,?)'
@@ -355,7 +381,7 @@ async function advanceSession(env, session, winner) {
     now
   ).run();
 
-  if (winner === 'new') high = mid; else low = mid + 1;
+  if (winner === 'new') high = pivot; else low = pivot + 1;
 
   if (low === high) {
     const insertionIndex = low;
@@ -373,10 +399,8 @@ async function advanceSession(env, session, winner) {
     return { completed: true, insertion_index: insertionIndex };
   }
 
-  const newMid = Math.floor((low + high) / 2);
-  const candidate = await env.db.prepare(
-    'SELECT * FROM bests_beers WHERE type = ? AND id != ? ORDER BY rank_index ASC LIMIT 1 OFFSET ?'
-  ).bind(session.beer_type, session.new_beer_id, newMid).first();
+  const newBeer = await env.db.prepare('SELECT * FROM bests_beers WHERE id = ?').bind(session.new_beer_id).first();
+  const candidate = await pickCandidateBeer(env, newBeer, session.beer_type, low, high);
   await env.db.prepare(`
     UPDATE bests_rank_sessions SET low_index = ?, high_index = ?, candidate_beer_id = ?, updated_at = ? WHERE id = ?
   `).bind(low, high, candidate?.id ?? null, now, session.id).run();
@@ -578,6 +602,33 @@ async function handlePost(request, env, userId) {
     }
     const updated = await env.db.prepare('SELECT * FROM bests_beers WHERE id = ?').bind(beer_id).first();
     return json({ created_beer: updated, session_id: outcome.session_id, next_comparison: { candidate: outcome.candidate } });
+  }
+
+  if (action === 'reorder_beer') {
+    const { beer_id, new_rank_index } = body;
+    if (beer_id == null || new_rank_index == null) return json({ error: 'beer_id and new_rank_index required' }, 400);
+    const beer = await env.db.prepare('SELECT * FROM bests_beers WHERE id = ?').bind(beer_id).first();
+    if (!beer) return json({ error: 'not found' }, 404);
+    const oldIdx = beer.rank_index;
+    if (oldIdx == null || oldIdx === new_rank_index) return json({ ok: true });
+    const countRow = await env.db.prepare(
+      'SELECT COUNT(*) AS cnt FROM bests_beers WHERE type = ?'
+    ).bind(beer.type).first();
+    const n = (countRow?.cnt ?? 1) - 1;
+    const newIdx = Math.max(0, Math.min(n, new_rank_index));
+    const now = Math.floor(Date.now() / 1000);
+    if (newIdx > oldIdx) {
+      await env.db.prepare(
+        'UPDATE bests_beers SET rank_index = rank_index - 1, updated_at = ? WHERE type = ? AND id != ? AND rank_index > ? AND rank_index <= ?'
+      ).bind(now, beer.type, beer_id, oldIdx, newIdx).run();
+    } else {
+      await env.db.prepare(
+        'UPDATE bests_beers SET rank_index = rank_index + 1, updated_at = ? WHERE type = ? AND id != ? AND rank_index >= ? AND rank_index < ?'
+      ).bind(now, beer.type, beer_id, newIdx, oldIdx).run();
+    }
+    await env.db.prepare('UPDATE bests_beers SET rank_index = ?, updated_at = ? WHERE id = ?').bind(newIdx, now, beer_id).run();
+    await recomputeTypeScores(env, beer.type);
+    return json({ ok: true });
   }
 
   if (action === 'export') {

@@ -120,6 +120,13 @@
     .cell-faded { font-size: 11px; color: var(--muted); display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
     option { color: #000; background: #fff; }
 
+    .drag-handle {
+      cursor: grab; color: var(--muted); font-size: 13px; padding: 2px 4px;
+      user-select: none; opacity: .5; line-height: 1;
+    }
+    .drag-handle:active { cursor: grabbing; }
+    tr.drag-over td { background: var(--card-bg) !important; }
+    tr.dragging { opacity: .35; }
     .row-actions { display: flex; gap: 4px; white-space: nowrap; align-items: center; justify-content: flex-end; }
     td:last-child { width: 1px; white-space: nowrap; }
     .btn-edit, .btn-remove {

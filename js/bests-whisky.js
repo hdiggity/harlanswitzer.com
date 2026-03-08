@@ -265,13 +265,14 @@
       var score = w.score != null
         ? '<span class="score-val" style="color:' + color + '">' + w.score.toFixed(1) + '</span>'
         : '<span class="score-null">—</span>';
-      return '<tr>' +
+      return '<tr draggable="true" data-id="' + w.id + '" data-rank="' + w.rank_index + '">' +
         '<td>' + score + '</td>' +
         '<td><button class="btn-detail" data-id="' + w.id + '">' + esc(w.product) + '</button></td>' +
         '<td>' + esc(w.distillery) + '</td>' +
         '<td>' + esc(w.type || '') + '</td>' +
         '<td>' + esc(emojiToCountry(w.country_territory || '')) + '</td>' +
         '<td><div class="row-actions">' +
+          '<span class="drag-handle" title="drag to reorder">⠿</span>' +
           '<button class="btn-remove" data-id="' + w.id + '">remove</button>' +
         '</div></td>' +
         '</tr>';
@@ -302,6 +303,41 @@
     listEl.querySelectorAll('.btn-remove').forEach(function (btn) {
       btn.addEventListener('click', function () { deleteWhisky(parseInt(btn.dataset.id, 10)); });
     });
+
+    // drag-to-reorder
+    var dragSrcId = null;
+    listEl.querySelectorAll('tr[draggable]').forEach(function (row) {
+      row.addEventListener('dragstart', function (e) {
+        dragSrcId = parseInt(row.dataset.id, 10);
+        row.classList.add('dragging');
+        e.dataTransfer.effectAllowed = 'move';
+      });
+      row.addEventListener('dragend', function () {
+        row.classList.remove('dragging');
+        listEl.querySelectorAll('tr.drag-over').forEach(function (r) { r.classList.remove('drag-over'); });
+      });
+      row.addEventListener('dragover', function (e) {
+        e.preventDefault();
+        e.dataTransfer.dropEffect = 'move';
+        listEl.querySelectorAll('tr.drag-over').forEach(function (r) { r.classList.remove('drag-over'); });
+        row.classList.add('drag-over');
+      });
+      row.addEventListener('drop', function (e) {
+        e.preventDefault();
+        row.classList.remove('drag-over');
+        var targetId = parseInt(row.dataset.id, 10);
+        if (!dragSrcId || dragSrcId === targetId) return;
+        var newRank = parseInt(row.dataset.rank, 10);
+        reorderWhisky(dragSrcId, newRank);
+      });
+    });
+  }
+
+  // ── reorder ───────────────────────────────────────────────────────────────
+  async function reorderWhisky(whiskyId, newRankIndex) {
+    var res = await api('POST', { action: 'reorder_whisky', whisky_id: whiskyId, new_rank_index: newRankIndex });
+    if (res.status === 401) { location.href = '/'; return; }
+    await loadData();
   }
 
   // ── detail modal ──────────────────────────────────────────────────────────
