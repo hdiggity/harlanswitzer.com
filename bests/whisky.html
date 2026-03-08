@@ -125,7 +125,8 @@
       user-select: none; opacity: .5; line-height: 1;
     }
     .drag-handle:active { cursor: grabbing; }
-    tr.drag-over td { background: var(--card-bg) !important; }
+    tr.drop-before td { box-shadow: 0 -2px 0 var(--fg); }
+    tr.drop-after td { box-shadow: 0 2px 0 var(--fg); }
     tr.dragging { opacity: .35; }
     .row-actions { display: flex; gap: 4px; white-space: nowrap; align-items: center; justify-content: flex-end; }
     td:last-child { width: 1px; white-space: nowrap; }

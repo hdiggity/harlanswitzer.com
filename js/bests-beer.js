@@ -229,7 +229,7 @@
     { id: 'score',    label: 'score'   },
     { id: 'product',  label: 'product' },
     { id: 'brewery',  label: 'brewery' },
-    { id: 'sub_type', label: 'style', nosort: true },
+    { id: 'type',     label: 'type', nosort: true },
     { id: 'country',  label: 'country' },
   ];
 
@@ -271,7 +271,7 @@
         '<td>' + score + '</td>' +
         '<td><button class="btn-detail" data-id="' + b.id + '">' + esc(b.product) + '</button></td>' +
         '<td>' + esc(b.brewery) + '</td>' +
-        '<td>' + esc(b.sub_type || '') + '</td>' +
+        '<td>' + esc(b.type || '') + '</td>' +
         '<td>' + esc(emojiToCountry(b.country_territory || '')) + '</td>' +
         '<td><div class="row-actions">' +
           '<span class="drag-handle" title="drag to reorder">⠿</span>' +
@@ -308,6 +308,15 @@
 
     // drag-to-reorder
     var dragSrcId = null;
+    var dropTargetRow = null;
+    var dropPos = null;
+    function clearDropIndicators() {
+      listEl.querySelectorAll('tr.drop-before, tr.drop-after').forEach(function (r) {
+        r.classList.remove('drop-before', 'drop-after');
+      });
+      dropTargetRow = null;
+      dropPos = null;
+    }
     listEl.querySelectorAll('tr[draggable]').forEach(function (row) {
       row.addEventListener('dragstart', function (e) {
         dragSrcId = parseInt(row.dataset.id, 10);
@@ -316,21 +325,35 @@
       });
       row.addEventListener('dragend', function () {
         row.classList.remove('dragging');
-        listEl.querySelectorAll('tr.drag-over').forEach(function (r) { r.classList.remove('drag-over'); });
+        clearDropIndicators();
       });
       row.addEventListener('dragover', function (e) {
         e.preventDefault();
         e.dataTransfer.dropEffect = 'move';
-        listEl.querySelectorAll('tr.drag-over').forEach(function (r) { r.classList.remove('drag-over'); });
-        row.classList.add('drag-over');
+        var rect = row.getBoundingClientRect();
+        var pos = e.clientY < rect.top + rect.height / 2 ? 'before' : 'after';
+        if (dropTargetRow !== row || dropPos !== pos) {
+          clearDropIndicators();
+          dropTargetRow = row;
+          dropPos = pos;
+          row.classList.add('drop-' + pos);
+        }
       });
       row.addEventListener('drop', function (e) {
         e.preventDefault();
-        row.classList.remove('drag-over');
+        if (!dragSrcId) return;
         var targetId = parseInt(row.dataset.id, 10);
-        if (!dragSrcId || dragSrcId === targetId) return;
-        var newRank = parseInt(row.dataset.rank, 10);
-        reorderBeer(dragSrcId, newRank);
+        if (dragSrcId === targetId) { clearDropIndicators(); return; }
+        var newRankIndex;
+        if (dropPos === 'before') {
+          newRankIndex = parseInt(row.dataset.rank, 10);
+        } else {
+          var next = row.nextElementSibling;
+          while (next && !next.dataset.rank) next = next.nextElementSibling;
+          newRankIndex = next ? parseInt(next.dataset.rank, 10) : parseInt(row.dataset.rank, 10) + 1;
+        }
+        clearDropIndicators();
+        reorderBeer(dragSrcId, newRankIndex);
       });
     });
   }

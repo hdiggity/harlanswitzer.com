@@ -22,3 +22,9 @@
 
 /bests/*
   Cache-Control: no-store
+
+/trading-cards
+  Cache-Control: no-store
+
+/trading-cards/*
+  Cache-Control: no-store
