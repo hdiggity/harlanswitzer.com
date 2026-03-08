@@ -308,10 +308,9 @@
 
   // ── detail modal ──────────────────────────────────────────────────────────
   function openDetailModal(beer) {
-    el('detailTitle').textContent = beer.product || '';
+    el('detailTitle').textContent = (beer.product || '') + (beer.score != null ? ' · ' + beer.score.toFixed(1) : '');
     var rows = [];
     if (beer.brewery)           rows.push(['brewery', beer.brewery]);
-    if (beer.score != null)     rows.push(['score', beer.score.toFixed(1)]);
     if (beer.type)              rows.push(['type', beer.type]);
     if (beer.sub_type)          rows.push(['style', beer.sub_type]);
     if (beer.country_territory) rows.push(['country', emojiToCountry(beer.country_territory)]);

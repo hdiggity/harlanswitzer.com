@@ -306,10 +306,9 @@
 
   // ── detail modal ──────────────────────────────────────────────────────────
   function openDetailModal(whisky) {
-    el('detailTitle').textContent = whisky.product || '';
+    el('detailTitle').textContent = (whisky.product || '') + (whisky.score != null ? ' · ' + whisky.score.toFixed(1) : '');
     var rows = [];
     if (whisky.distillery)        rows.push(['distillery', whisky.distillery]);
-    if (whisky.score != null)     rows.push(['score', whisky.score.toFixed(1)]);
     if (whisky.type)              rows.push(['type', whisky.type]);
     if (whisky.age)               rows.push(['age', whisky.age]);
     if (whisky.country_territory) rows.push(['country', emojiToCountry(whisky.country_territory)]);
