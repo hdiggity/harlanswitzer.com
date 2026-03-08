@@ -227,12 +227,8 @@
     { id: 'score',      label: 'score'      },
     { id: 'product',    label: 'product'    },
     { id: 'distillery', label: 'distillery' },
-    { id: 'age',        label: 'age',   nosort: true },
-    { id: 'country',    label: 'country' },
-    { id: 'where',      label: 'where'      },
-    { id: 'when',       label: 'when'       },
-    { id: 'flavor',     label: 'flavor', nosort: true },
-    { id: 'notes',      label: 'notes',  nosort: true },
+    { id: 'type',       label: 'style', nosort: true },
+    { id: 'country',    label: 'country'    },
   ];
 
   function arrow(col) {
@@ -269,24 +265,13 @@
       var score = w.score != null
         ? '<span class="score-val" style="color:' + color + '">' + w.score.toFixed(1) + '</span>'
         : '<span class="score-null">—</span>';
-      var product = '<strong>' + esc(w.product) + '</strong>';
-      var whereText = [w.where_name, w.where_city_state, w.where_country].filter(Boolean).join(' · ');
-      var where  = whereText ? '<span class="cell-faded">' + esc(whereText) + '</span>' : '';
-      var when   = formatWhen(w) ? '<span class="cell-faded">' + esc(formatWhen(w)) + '</span>' : '';
-      var flavor = w.flavor ? '<span class="cell-faded">' + esc(w.flavor) + '</span>' : '';
-      var notes  = w.notes  ? '<span class="cell-faded">' + esc(w.notes)  + '</span>' : '';
       return '<tr>' +
         '<td>' + score + '</td>' +
-        '<td>' + product + '</td>' +
+        '<td><button class="btn-detail" data-id="' + w.id + '">' + esc(w.product) + '</button></td>' +
         '<td>' + esc(w.distillery) + '</td>' +
-        '<td class="cell-age-col">' + esc(w.age || '') + '</td>' +
+        '<td>' + esc(w.type || '') + '</td>' +
         '<td>' + esc(emojiToCountry(w.country_territory || '')) + '</td>' +
-        '<td class="cell-notes-col">' + where + '</td>' +
-        '<td>' + when + '</td>' +
-        '<td class="cell-notes-col">' + flavor + '</td>' +
-        '<td class="cell-notes-col">' + notes  + '</td>' +
         '<td><div class="row-actions">' +
-          '<button class="btn-edit"   data-id="' + w.id + '">edit</button>' +
           '<button class="btn-remove" data-id="' + w.id + '">remove</button>' +
         '</div></td>' +
         '</tr>';
@@ -307,16 +292,41 @@
       });
     });
 
-    listEl.querySelectorAll('.btn-edit').forEach(function (btn) {
+    listEl.querySelectorAll('.btn-detail').forEach(function (btn) {
       btn.addEventListener('click', function () {
         var whisky = state.allWhiskies.find(function (w) { return w.id === parseInt(btn.dataset.id, 10); });
-        if (whisky) openEditModal(whisky);
+        if (whisky) openDetailModal(whisky);
       });
     });
 
     listEl.querySelectorAll('.btn-remove').forEach(function (btn) {
       btn.addEventListener('click', function () { deleteWhisky(parseInt(btn.dataset.id, 10)); });
     });
+  }
+
+  // ── detail modal ──────────────────────────────────────────────────────────
+  function openDetailModal(whisky) {
+    el('detailTitle').textContent = whisky.product || '';
+    var rows = [];
+    if (whisky.distillery)        rows.push(['distillery', whisky.distillery]);
+    if (whisky.score != null)     rows.push(['score', whisky.score.toFixed(1)]);
+    if (whisky.type)              rows.push(['type', whisky.type]);
+    if (whisky.age)               rows.push(['age', whisky.age]);
+    if (whisky.country_territory) rows.push(['country', emojiToCountry(whisky.country_territory)]);
+    var whereText = [whisky.where_name, whisky.where_city_state, whisky.where_country].filter(Boolean).join(' · ');
+    if (whereText)                rows.push(['where', whereText]);
+    if (whisky.when_text)         rows.push(['when', whisky.when_text]);
+    if (whisky.flavor)            rows.push(['flavor', whisky.flavor]);
+    if (whisky.notes)             rows.push(['notes', whisky.notes]);
+    el('detailContent').innerHTML = '<div class="detail-rows">' + rows.map(function (r) {
+      return '<div class="detail-row"><span class="detail-label">' + esc(r[0]) + '</span><span class="detail-val">' + esc(r[1]) + '</span></div>';
+    }).join('') + '</div>';
+    el('detailModal').dataset.id = whisky.id;
+    el('detailModal').removeAttribute('hidden');
+  }
+
+  function closeDetailModal() {
+    el('detailModal').setAttribute('hidden', '');
   }
 
   // ── edit modal ────────────────────────────────────────────────────────────
@@ -529,6 +539,20 @@
         await loadData();
         showComparison(d.created_whisky, d.next_comparison.candidate);
       }
+    });
+
+    // detail modal
+    el('detailModalClose').addEventListener('click', closeDetailModal);
+    el('detailEdit').addEventListener('click', function () {
+      var whiskyId = parseInt(el('detailModal').dataset.id, 10);
+      var whisky = state.allWhiskies.find(function (w) { return w.id === whiskyId; });
+      closeDetailModal();
+      if (whisky) openEditModal(whisky);
+    });
+    el('detailRemove').addEventListener('click', function () {
+      var whiskyId = parseInt(el('detailModal').dataset.id, 10);
+      closeDetailModal();
+      deleteWhisky(whiskyId);
     });
 
     // edit modal

@@ -226,14 +226,11 @@
 
   // ── table render ──────────────────────────────────────────────────────────
   var COLS = [
-    { id: 'score',    label: 'score'    },
-    { id: 'product',  label: 'product'  },
-    { id: 'brewery',  label: 'brewery'  },
+    { id: 'score',    label: 'score'   },
+    { id: 'product',  label: 'product' },
+    { id: 'brewery',  label: 'brewery' },
     { id: 'sub_type', label: 'style', nosort: true },
     { id: 'country',  label: 'country' },
-    { id: 'where',   label: 'where'   },
-    { id: 'when',    label: 'when'    },
-    { id: 'notes',   label: 'notes', nosort: true },
   ];
 
   function arrow(col) {
@@ -270,22 +267,13 @@
       var score = b.score != null
         ? '<span class="score-val" style="color:' + color + '">' + b.score.toFixed(1) + '</span>'
         : '<span class="score-null">—</span>';
-      var product = '<strong>' + esc(b.product) + '</strong>';
-      var whereText = [b.where_name, b.where_city_state, b.where_country].filter(Boolean).join(' · ');
-      var where = whereText ? '<span class="cell-faded">' + esc(whereText) + '</span>' : '';
-      var when  = formatWhen(b) ? '<span class="cell-faded">' + esc(formatWhen(b)) + '</span>' : '';
-      var notes = b.event_notes ? '<span class="cell-faded">' + esc(b.event_notes) + '</span>' : '';
       return '<tr>' +
         '<td>' + score + '</td>' +
-        '<td>' + product + '</td>' +
+        '<td><button class="btn-detail" data-id="' + b.id + '">' + esc(b.product) + '</button></td>' +
         '<td>' + esc(b.brewery) + '</td>' +
         '<td>' + esc(b.sub_type || '') + '</td>' +
         '<td>' + esc(emojiToCountry(b.country_territory || '')) + '</td>' +
-        '<td class="cell-notes-col">' + where + '</td>' +
-        '<td>' + when + '</td>' +
-        '<td class="cell-notes-col">' + notes + '</td>' +
         '<td><div class="row-actions">' +
-          '<button class="btn-edit"   data-id="' + b.id + '">edit</button>' +
           '<button class="btn-remove" data-id="' + b.id + '">remove</button>' +
         '</div></td>' +
         '</tr>';
@@ -306,16 +294,40 @@
       });
     });
 
-    listEl.querySelectorAll('.btn-edit').forEach(function (btn) {
+    listEl.querySelectorAll('.btn-detail').forEach(function (btn) {
       btn.addEventListener('click', function () {
         var beer = state.allBeers.find(function (b) { return b.id === parseInt(btn.dataset.id, 10); });
-        if (beer) openEditModal(beer);
+        if (beer) openDetailModal(beer);
       });
     });
 
     listEl.querySelectorAll('.btn-remove').forEach(function (btn) {
       btn.addEventListener('click', function () { deleteBeer(parseInt(btn.dataset.id, 10)); });
     });
+  }
+
+  // ── detail modal ──────────────────────────────────────────────────────────
+  function openDetailModal(beer) {
+    el('detailTitle').textContent = beer.product || '';
+    var rows = [];
+    if (beer.brewery)           rows.push(['brewery', beer.brewery]);
+    if (beer.score != null)     rows.push(['score', beer.score.toFixed(1)]);
+    if (beer.type)              rows.push(['type', beer.type]);
+    if (beer.sub_type)          rows.push(['style', beer.sub_type]);
+    if (beer.country_territory) rows.push(['country', emojiToCountry(beer.country_territory)]);
+    var whereText = [beer.where_name, beer.where_city_state, beer.where_country].filter(Boolean).join(' · ');
+    if (whereText)              rows.push(['where', whereText]);
+    if (beer.when_text)         rows.push(['when', beer.when_text]);
+    if (beer.event_notes)       rows.push(['notes', beer.event_notes]);
+    el('detailContent').innerHTML = '<div class="detail-rows">' + rows.map(function (r) {
+      return '<div class="detail-row"><span class="detail-label">' + esc(r[0]) + '</span><span class="detail-val">' + esc(r[1]) + '</span></div>';
+    }).join('') + '</div>';
+    el('detailModal').dataset.id = beer.id;
+    el('detailModal').removeAttribute('hidden');
+  }
+
+  function closeDetailModal() {
+    el('detailModal').setAttribute('hidden', '');
   }
 
   // ── edit modal ────────────────────────────────────────────────────────────
@@ -522,6 +534,20 @@
         await loadData();
         showComparison(d.created_beer, d.next_comparison.candidate);
       }
+    });
+
+    // detail modal
+    el('detailModalClose').addEventListener('click', closeDetailModal);
+    el('detailEdit').addEventListener('click', function () {
+      var beerId = parseInt(el('detailModal').dataset.id, 10);
+      var beer = state.allBeers.find(function (b) { return b.id === beerId; });
+      closeDetailModal();
+      if (beer) openEditModal(beer);
+    });
+    el('detailRemove').addEventListener('click', function () {
+      var beerId = parseInt(el('detailModal').dataset.id, 10);
+      closeDetailModal();
+      deleteBeer(beerId);
     });
 
     // edit modal
