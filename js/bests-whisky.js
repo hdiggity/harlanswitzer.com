@@ -315,7 +315,8 @@
     if (whisky.country_territory) rows.push(['country', emojiToCountry(whisky.country_territory)]);
     var whereText = [whisky.where_name, whisky.where_city_state, whisky.where_country].filter(Boolean).join(' · ');
     if (whereText)                rows.push(['where', whereText]);
-    if (whisky.when_text)         rows.push(['when', whisky.when_text]);
+    var whenStr = formatWhen(whisky);
+    if (whenStr)                  rows.push(['when', whenStr]);
     if (whisky.flavor)            rows.push(['flavor', whisky.flavor]);
     if (whisky.notes)             rows.push(['notes', whisky.notes]);
     el('detailContent').innerHTML = '<div class="detail-rows">' + rows.map(function (r) {

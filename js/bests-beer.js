@@ -317,7 +317,8 @@
     if (beer.country_territory) rows.push(['country', emojiToCountry(beer.country_territory)]);
     var whereText = [beer.where_name, beer.where_city_state, beer.where_country].filter(Boolean).join(' · ');
     if (whereText)              rows.push(['where', whereText]);
-    if (beer.when_text)         rows.push(['when', beer.when_text]);
+    var whenStr = formatWhen(beer);
+    if (whenStr)                rows.push(['when', whenStr]);
     if (beer.event_notes)       rows.push(['notes', beer.event_notes]);
     el('detailContent').innerHTML = '<div class="detail-rows">' + rows.map(function (r) {
       return '<div class="detail-row"><span class="detail-label">' + esc(r[0]) + '</span><span class="detail-val">' + esc(r[1]) + '</span></div>';
