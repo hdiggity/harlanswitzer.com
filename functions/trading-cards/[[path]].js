@@ -23,9 +23,8 @@ export async function onRequest(context) {
     pathStr === '/manifest.json' || pathStr === '/logo192.png' || pathStr === '/logo512.png' ||
     pathStr === '/asset-manifest.json';
 
-  // auth: require valid session (skip for static assets)
-  const session = isStaticAsset ? null : await verifySession(request, env);
-  if (!isStaticAsset && !session) return json({ error: 'unauthorized' }, 401);
+  // auth: require valid session for all requests
+  const session = await verifySession(request, env);
   if (!session) return json({ error: 'unauthorized' }, 401);
 
   if (!isStaticAsset) {
