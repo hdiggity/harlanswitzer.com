@@ -3,6 +3,7 @@ import { verifySession } from './_auth.js';
 const MAIN_HOST  = 'harlanswitzer.com';
 const BESTS_HOST = 'bests.harlanswitzer.com';
 const CARDS_HOST = 'trading-cards.harlanswitzer.com';
+const SPAM_HOST  = 'email-spam.harlanswitzer.com';
 
 const SKIP_LOG_PATHS = ['/collect', '/auth/', '/admin/api'];
 const BOT_THRESHOLD  = 30;
@@ -23,6 +24,7 @@ export async function onRequest(context) {
   // ── subdomain routing ─────────────────────────────────────────────────────
   if (host === BESTS_HOST) return handleBests(request, env, next, url);
   if (host === CARDS_HOST) return handleCards(request, env, url);
+  if (host === SPAM_HOST)  return handleSpam(request, env, next, url);
 
   // ── main domain: redirect old paths to subdomains ─────────────────────────
   const path   = url.pathname;
@@ -214,6 +216,53 @@ async function handleCards(request, env, url) {
   respHeaders.delete('connection');
 
   return new Response(resp.body, { status: resp.status, headers: respHeaders });
+}
+
+// ── email-spam subdomain ──────────────────────────────────────────────────
+async function handleSpam(request, env, next, url) {
+  const path = url.pathname;
+
+  const isPassThrough =
+    /\.(js|css|png|ico|woff2?|svg|webp|jpg|jpeg|gif|map)$/.test(path) ||
+    path.startsWith('/auth/') || path.startsWith('/collect');
+
+  if (isPassThrough) {
+    const resp = await next();
+    return new Response(resp.body, { status: resp.status, headers: withSecHeaders(resp.headers) });
+  }
+
+  const session = await verifySession(request, env);
+  if (!session) {
+    return Response.redirect(
+      'https://' + MAIN_HOST + '/?redirect=' + encodeURIComponent(request.url), 302
+    );
+  }
+
+  // API routes handled by CF Functions — pass through
+  if (path.startsWith('/api/')) {
+    const resp = await next();
+    return new Response(resp.body, { status: resp.status, headers: withSecHeaders(resp.headers) });
+  }
+
+  // rewrite root to index.html
+  const rewrites = {
+    '/':           '/email-spam/index.html',
+    '/index.html': '/email-spam/index.html',
+  };
+
+  const assetPath = rewrites[path];
+  if (assetPath) {
+    const assetUrl = new URL(request.url);
+    assetUrl.hostname = MAIN_HOST;
+    assetUrl.pathname = assetPath;
+    const resp = await env.ASSETS.fetch(
+      new Request(assetUrl.toString(), { method: 'GET', headers: request.headers })
+    );
+    return new Response(resp.body, { status: resp.status, headers: withSecHeaders(resp.headers) });
+  }
+
+  const resp = await next();
+  return new Response(resp.body, { status: resp.status, headers: withSecHeaders(resp.headers) });
 }
 
 // ── helpers ───────────────────────────────────────────────────────────────────

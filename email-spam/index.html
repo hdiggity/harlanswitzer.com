@@ -1,0 +1,347 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>email spam — harlanswitzer.com</title>
+  <style>
+    :root {
+      --bg: #ffffff;
+      --fg: #2b3a2b;
+      --accent: #3a6b3a;
+      --muted: rgba(43,58,43,.45);
+      --border: rgba(43,58,43,.13);
+      --row-alt: rgba(43,58,43,.025);
+      --card-bg: rgba(43,58,43,.04);
+      --font: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body { height: 100%; }
+    body { font-family: var(--font); background: var(--bg); color: var(--fg); font-size: 14px; line-height: 1.5; }
+
+    .hd {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 16px 28px; border-bottom: 1px solid var(--border);
+    }
+    .hd-site {
+      font-size: 11px; letter-spacing: .12em; text-transform: uppercase;
+      color: var(--muted); text-decoration: none; transition: color 150ms;
+    }
+    .hd-site:hover { color: var(--fg); }
+    .hd-right { display: flex; align-items: center; gap: 12px; }
+    .hd-title {
+      font-size: 11px; letter-spacing: .12em; text-transform: uppercase; color: var(--muted);
+    }
+    .hd-btn {
+      background: none; border: 1px solid var(--border); color: var(--muted);
+      font-size: 11px; letter-spacing: .1em; text-transform: uppercase;
+      padding: 6px 14px; border-radius: 6px; cursor: pointer; font-family: var(--font);
+      transition: color 150ms, border-color 150ms;
+    }
+    .hd-btn:hover { color: var(--fg); border-color: var(--fg); }
+
+    .wrap { max-width: 960px; margin: 0 auto; padding: 40px 28px; }
+
+    /* stat grid */
+    .stat-section { margin-bottom: 40px; }
+    .stat-section-title {
+      font-size: 10px; letter-spacing: .18em; text-transform: uppercase;
+      color: var(--muted); margin-bottom: 14px;
+    }
+    .stat-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 12px; }
+    .stat-card {
+      border: 1px solid var(--border); border-radius: 8px;
+      padding: 16px 18px; background: var(--card-bg);
+    }
+    .stat-label {
+      font-size: 10px; letter-spacing: .14em; text-transform: uppercase;
+      color: var(--muted); margin-bottom: 6px;
+    }
+    .stat-value { font-size: 26px; font-weight: 600; color: var(--fg); letter-spacing: -.01em; }
+    .stat-sub { font-size: 11px; color: var(--muted); margin-top: 2px; }
+
+    /* period tabs */
+    .period-tabs { display: flex; gap: 4px; margin-bottom: 24px; }
+    .period-tab {
+      background: none; border: 1px solid var(--border); color: var(--muted);
+      font-size: 10px; letter-spacing: .14em; text-transform: uppercase;
+      padding: 5px 12px; border-radius: 5px; cursor: pointer; font-family: var(--font);
+      transition: color 150ms, border-color 150ms, background 150ms;
+    }
+    .period-tab.active { color: var(--fg); border-color: var(--fg); background: var(--card-bg); }
+    .period-tab:hover { color: var(--fg); border-color: var(--fg); }
+
+    /* controls */
+    .controls { display: flex; gap: 10px; margin-bottom: 40px; flex-wrap: wrap; align-items: center; }
+    .ctrl-btn {
+      background: none; border: 1px solid var(--border); color: var(--muted);
+      font-size: 11px; letter-spacing: .1em; text-transform: uppercase;
+      padding: 7px 16px; border-radius: 6px; cursor: pointer; font-family: var(--font);
+      transition: color 150ms, border-color 150ms;
+    }
+    .ctrl-btn:hover { color: var(--fg); border-color: var(--fg); }
+    .ctrl-btn:disabled { opacity: .4; cursor: not-allowed; }
+    .ctrl-msg { font-size: 12px; color: var(--muted); }
+
+    /* recent rows table */
+    .section-title {
+      font-size: 10px; letter-spacing: .18em; text-transform: uppercase;
+      color: var(--muted); margin-bottom: 14px;
+    }
+    .tbl-wrap { overflow-x: auto; }
+    table { width: 100%; border-collapse: collapse; font-size: 13px; }
+    thead th {
+      text-align: left; font-size: 10px; letter-spacing: .14em; text-transform: uppercase;
+      color: var(--muted); font-weight: 500; padding: 8px 10px;
+      border-bottom: 1px solid var(--border);
+    }
+    tbody tr { border-bottom: 1px solid var(--border); cursor: pointer; }
+    tbody tr:nth-child(even) { background: var(--row-alt); }
+    tbody tr:hover { background: var(--card-bg); }
+    td { padding: 9px 10px; vertical-align: top; }
+    td.ts { white-space: nowrap; color: var(--muted); font-size: 12px; width: 110px; }
+    td.sender { max-width: 200px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    td.subject { max-width: 260px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    td.action { white-space: nowrap; }
+    td.score { text-align: right; color: var(--muted); font-size: 12px; width: 50px; }
+
+    /* expanded detail row */
+    tr.detail-row td { padding: 0; background: var(--card-bg); }
+    .detail-inner {
+      padding: 14px 18px; font-size: 12px; line-height: 1.6;
+      border-top: 1px dashed var(--border);
+      display: grid; grid-template-columns: 120px 1fr; gap: 4px 14px;
+    }
+    .detail-key { color: var(--muted); font-size: 10px; letter-spacing: .1em; text-transform: uppercase; padding-top: 2px; }
+    .detail-val { word-break: break-word; }
+
+    /* spinner */
+    .loading { text-align: center; padding: 60px; color: var(--muted); font-size: 12px; letter-spacing: .1em; text-transform: uppercase; }
+
+    @media (max-width: 600px) {
+      .hd { padding: 14px 18px; }
+      .wrap { padding: 28px 16px; }
+      .stat-grid { grid-template-columns: 1fr 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <header class="hd">
+    <a href="https://harlanswitzer.com" class="hd-site">harlanswitzer.com</a>
+    <div class="hd-right">
+      <span class="hd-title">email spam</span>
+      <button id="logoutBtn" class="hd-btn">logout</button>
+    </div>
+  </header>
+
+  <div id="main" class="wrap" style="display:none">
+    <div class="period-tabs" id="periodTabs">
+      <button class="period-tab active" data-period="last7d">7 days</button>
+      <button class="period-tab" data-period="last30d">30 days</button>
+      <button class="period-tab" data-period="total">all time</button>
+    </div>
+
+    <div class="stat-section">
+      <div class="stat-section-title">stats</div>
+      <div class="stat-grid" id="statGrid">
+        <div class="stat-card"><div class="stat-label">spam</div><div class="stat-value" id="s-spam">—</div></div>
+        <div class="stat-card"><div class="stat-label">unsubscribed</div><div class="stat-value" id="s-confirmed">—</div></div>
+        <div class="stat-card"><div class="stat-label">attempted</div><div class="stat-value" id="s-attempted">—</div></div>
+        <div class="stat-card"><div class="stat-label">no link</div><div class="stat-value" id="s-nolink">—</div></div>
+        <div class="stat-card"><div class="stat-label">success rate</div><div class="stat-value" id="s-rate">—</div><div class="stat-sub" id="s-rate-sub"></div></div>
+      </div>
+    </div>
+
+    <div class="controls">
+      <button class="ctrl-btn" id="btnList">list triggers</button>
+      <button class="ctrl-btn" id="btnInstall">install triggers</button>
+      <span class="ctrl-msg" id="ctrlMsg"></span>
+    </div>
+
+    <div class="section-title">recent activity</div>
+    <div class="tbl-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>date</th>
+            <th>sender</th>
+            <th>subject</th>
+            <th>action</th>
+            <th style="text-align:right">score</th>
+          </tr>
+        </thead>
+        <tbody id="tblBody"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <div id="loading" class="loading">loading…</div>
+
+  <script>
+    (function () {
+      var dashData = null;
+      var currentPeriod = 'last7d';
+
+      document.getElementById('logoutBtn').addEventListener('click', function () {
+        fetch('/auth/logout', { method: 'POST' }).then(function () { location.href = '/'; });
+      });
+
+      // period tabs
+      document.getElementById('periodTabs').addEventListener('click', function (e) {
+        var btn = e.target.closest('.period-tab');
+        if (!btn) return;
+        document.querySelectorAll('.period-tab').forEach(function (t) { t.classList.remove('active'); });
+        btn.classList.add('active');
+        currentPeriod = btn.dataset.period;
+        if (dashData) renderStats(dashData.stats);
+      });
+
+      // auth check
+      fetch('/auth/me')
+        .then(function (r) { return r.json(); })
+        .then(function (d) {
+          if (!d.loggedIn) { location.href = '/'; return; }
+          loadDashboard();
+        })
+        .catch(function () { location.href = '/'; });
+
+      function loadDashboard() {
+        fetch('/api/email-spam/dashboard')
+          .then(function (r) { return r.json(); })
+          .then(function (resp) {
+            document.getElementById('loading').style.display = 'none';
+            document.getElementById('main').style.display = '';
+            if (!resp.success || !resp.data) {
+              document.getElementById('main').innerHTML = '<p style="color:var(--muted);font-size:12px">error: ' + (resp.error || 'unknown') + '</p>';
+              return;
+            }
+            dashData = resp.data;
+            renderStats(dashData.stats);
+            renderRows(dashData.recentRows);
+          })
+          .catch(function (err) {
+            document.getElementById('loading').textContent = 'failed to load dashboard';
+          });
+      }
+
+      function renderStats(stats) {
+        var s = stats[currentPeriod] || {};
+        document.getElementById('s-spam').textContent = s.spam !== undefined ? s.spam : '—';
+        document.getElementById('s-confirmed').textContent = s.unsubConfirmed !== undefined ? s.unsubConfirmed : '—';
+        document.getElementById('s-attempted').textContent = s.unsubAttempted !== undefined ? s.unsubAttempted : '—';
+        document.getElementById('s-nolink').textContent = s.noLink !== undefined ? s.noLink : '—';
+        if (s.unsubAttempted > 0) {
+          var rate = Math.round((s.unsubConfirmed / s.unsubAttempted) * 100);
+          document.getElementById('s-rate').textContent = rate + '%';
+          document.getElementById('s-rate-sub').textContent = s.unsubConfirmed + ' of ' + s.unsubAttempted;
+        } else {
+          document.getElementById('s-rate').textContent = '—';
+          document.getElementById('s-rate-sub').textContent = '';
+        }
+      }
+
+      function renderRows(rows) {
+        var tbody = document.getElementById('tblBody');
+        tbody.innerHTML = '';
+        if (!rows || !rows.length) {
+          var tr = document.createElement('tr');
+          tr.innerHTML = '<td colspan="5" style="color:var(--muted);text-align:center;padding:20px">no data</td>';
+          tbody.appendChild(tr);
+          return;
+        }
+        rows.forEach(function (row) {
+          var ts = row['timestamp'] ? new Date(row['timestamp']) : null;
+          var tsStr = ts && !isNaN(ts) ? ts.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: '2-digit' }) : '';
+          var sender  = row['sender']  || '';
+          var subject = row['subject'] || '';
+          var action  = row['action']  || '';
+          var score   = row['score']   !== undefined ? row['score'] : '';
+
+          var tr = document.createElement('tr');
+          tr.innerHTML =
+            '<td class="ts">' + esc(tsStr) + '</td>' +
+            '<td class="sender">' + esc(sender) + '</td>' +
+            '<td class="subject">' + esc(subject) + '</td>' +
+            '<td class="action">' + esc(action) + '</td>' +
+            '<td class="score">' + esc(String(score !== '' ? Number(score).toFixed(1) : '')) + '</td>';
+
+          var detailRow = document.createElement('tr');
+          detailRow.className = 'detail-row';
+          detailRow.style.display = 'none';
+          var detailTd = document.createElement('td');
+          detailTd.colSpan = 5;
+          var inner = document.createElement('div');
+          inner.className = 'detail-inner';
+          var fields = [
+            ['timestamp',          row['timestamp'] ? new Date(row['timestamp']).toLocaleString() : ''],
+            ['received at',        row['received at'] || ''],
+            ['sender',             sender],
+            ['subject',            subject],
+            ['body summary',       row['body summary'] || ''],
+            ['action',             action],
+            ['verified unsub',     row['verified unsubscribed'] || ''],
+            ['score',              score !== '' ? String(score) : ''],
+          ];
+          fields.forEach(function (pair) {
+            if (!pair[1]) return;
+            var k = document.createElement('div'); k.className = 'detail-key'; k.textContent = pair[0];
+            var v = document.createElement('div'); v.className = 'detail-val'; v.textContent = pair[1];
+            inner.appendChild(k);
+            inner.appendChild(v);
+          });
+          detailTd.appendChild(inner);
+          detailRow.appendChild(detailTd);
+
+          tr.addEventListener('click', function () {
+            var open = detailRow.style.display !== 'none';
+            detailRow.style.display = open ? 'none' : '';
+          });
+
+          tbody.appendChild(tr);
+          tbody.appendChild(detailRow);
+        });
+      }
+
+      // control buttons
+      document.getElementById('btnList').addEventListener('click', function () {
+        ctrl('list_triggers', this);
+      });
+      document.getElementById('btnInstall').addEventListener('click', function () {
+        ctrl('install_triggers', this);
+      });
+
+      function ctrl(action, btn) {
+        var msg = document.getElementById('ctrlMsg');
+        btn.disabled = true;
+        msg.textContent = 'working…';
+        fetch('/api/email-spam/control', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ action: action })
+        })
+          .then(function (r) { return r.json(); })
+          .then(function (d) {
+            btn.disabled = false;
+            if (d.success) {
+              msg.textContent = typeof d.message === 'string' ? d.message : JSON.stringify(d.message);
+            } else {
+              msg.textContent = 'error: ' + (d.error || 'unknown');
+            }
+          })
+          .catch(function () {
+            btn.disabled = false;
+            msg.textContent = 'request failed';
+          });
+      }
+
+      function esc(s) {
+        return String(s)
+          .replace(/&/g, '&amp;')
+          .replace(/</g, '&lt;')
+          .replace(/>/g, '&gt;')
+          .replace(/"/g, '&quot;');
+      }
+    })();
+  </script>
+</body>
+</html>
