@@ -70,7 +70,7 @@ export async function onRequestPost(context) {
 
   // ── success — create session ───────────────────────────────────────────────
   const sessionId = crypto.randomUUID();
-  const expiresAt = now + 30 * 24 * 60 * 60; // 30 days
+  const expiresAt = now + 10 * 60; // 10 minutes
 
   try {
     await env.db.prepare(
@@ -92,7 +92,7 @@ export async function onRequestPost(context) {
     status: 200,
     headers: {
       'Content-Type': 'application/json',
-      'Set-Cookie': `session=${cookieVal}; HttpOnly; Secure; Path=/; Max-Age=2592000; SameSite=Lax; Domain=.harlanswitzer.com`,
+      'Set-Cookie': `session=${cookieVal}; HttpOnly; Secure; Path=/; Max-Age=600; SameSite=Lax; Domain=.harlanswitzer.com`,
     },
   });
 }
