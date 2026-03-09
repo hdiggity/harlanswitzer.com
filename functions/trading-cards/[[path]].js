@@ -17,23 +17,27 @@ function isAllowed(username, env) {
 export async function onRequest(context) {
   const { request, env, params } = context;
 
-  // auth: require valid session
-  const session = await verifySession(request, env);
+  const pathParts = Array.isArray(params.path) ? params.path : [];
+  const pathStr = pathParts.length > 0 ? '/' + pathParts.join('/') : '/';
+  const isStaticAsset = pathStr.startsWith('/static/') || pathStr === '/favicon.ico' ||
+    pathStr === '/manifest.json' || pathStr === '/logo192.png' || pathStr === '/logo512.png' ||
+    pathStr === '/asset-manifest.json';
+
+  // auth: require valid session (skip for static assets)
+  const session = isStaticAsset ? null : await verifySession(request, env);
+  if (!isStaticAsset && !session) return json({ error: 'unauthorized' }, 401);
   if (!session) return json({ error: 'unauthorized' }, 401);
 
-  const user = await env.db.prepare(
-    'SELECT id, username FROM users WHERE id = ?'
-  ).bind(session.user_id).first();
-  if (!user) return json({ error: 'unauthorized' }, 401);
-
-  if (!isAllowed(user.username, env)) return json({ error: 'forbidden' }, 403);
+  if (!isStaticAsset) {
+    const user = await env.db.prepare(
+      'SELECT id, username FROM users WHERE id = ?'
+    ).bind(session.user_id).first();
+    if (!user) return json({ error: 'unauthorized' }, 401);
+    if (!isAllowed(user.username, env)) return json({ error: 'forbidden' }, 403);
+  }
 
   const origin = env.TRADING_CARDS_ORIGIN;
   if (!origin) return json({ error: 'origin not configured' }, 500);
-
-  // build target URL: strip /trading-cards prefix
-  const pathParts = Array.isArray(params.path) ? params.path : [];
-  const pathStr = pathParts.length > 0 ? '/' + pathParts.join('/') : '/';
   const url = new URL(request.url);
   const targetUrl = origin.replace(/\/$/, '') + pathStr + url.search;
 
