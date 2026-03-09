@@ -66,7 +66,13 @@
       })
         .then(function (r) {
           if (r.ok) {
-            location.href = '/';
+            var params = new URLSearchParams(location.search);
+            var redir = params.get('redirect');
+            if (redir && /^https:\/\/[^/]*\.harlanswitzer\.com/.test(redir)) {
+              location.href = redir;
+            } else {
+              location.href = '/';
+            }
           } else {
             return r.text().then(function (text) {
               var msg = 'error ' + r.status;

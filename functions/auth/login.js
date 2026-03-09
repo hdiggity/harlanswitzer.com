@@ -92,7 +92,7 @@ export async function onRequestPost(context) {
     status: 200,
     headers: {
       'Content-Type': 'application/json',
-      'Set-Cookie': `session=${cookieVal}; HttpOnly; Secure; Path=/; Max-Age=3600; SameSite=Lax`,
+      'Set-Cookie': `session=${cookieVal}; HttpOnly; Secure; Path=/; Max-Age=3600; SameSite=Lax; Domain=.harlanswitzer.com`,
     },
   });
 }
