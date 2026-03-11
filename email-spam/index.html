@@ -96,6 +96,16 @@
     /* ctrl msg */
     .ctrl-msg { font-size: 12px; color: var(--muted); margin-top: 12px; min-height: 16px; }
 
+    /* top senders/domains */
+    .top-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin-bottom: 32px; }
+    @media (max-width: 600px) { .top-grid { grid-template-columns: 1fr; } }
+    .top-list-title { font-size: 10px; letter-spacing: .14em; text-transform: uppercase; color: var(--muted); margin-bottom: 10px; }
+    .top-item { display: flex; align-items: center; justify-content: space-between; padding: 6px 0; border-bottom: 1px solid var(--border); font-size: 12px; gap: 8px; }
+    .top-item:last-child { border-bottom: none; }
+    .top-item-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex: 1; }
+    .top-item-count { color: var(--muted); font-size: 11px; white-space: nowrap; }
+    .top-item-actions { display: flex; gap: 6px; flex-shrink: 0; }
+
     /* recent activity table */
     .tbl-wrap { overflow-x: auto; }
     table { width: 100%; border-collapse: collapse; font-size: 13px; }
@@ -150,6 +160,18 @@
       <div class="stat-card"><div class="stat-label">attempted</div><div class="stat-value" id="s-attempted">—</div></div>
       <div class="stat-card"><div class="stat-label">no link</div><div class="stat-value" id="s-nolink">—</div></div>
       <div class="stat-card"><div class="stat-label">success rate</div><div class="stat-value" id="s-rate">—</div><div class="stat-sub" id="s-rate-sub"></div></div>
+    </div>
+
+    <!-- top senders / domains -->
+    <div class="top-grid" id="topGrid" style="display:none">
+      <div>
+        <div class="top-list-title">top senders</div>
+        <div id="topSenders"></div>
+      </div>
+      <div>
+        <div class="top-list-title">top domains</div>
+        <div id="topDomains"></div>
+      </div>
     </div>
 
     <!-- triggers -->
@@ -311,6 +333,7 @@
         tbody.appendChild(tr); return;
       }
       rows = rows.slice().sort(function (a, b) { return new Date(b['timestamp'] || 0) - new Date(a['timestamp'] || 0); });
+      renderTopSenders(rows);
       rows.forEach(function (row) {
         var ts      = row['timestamp'] ? new Date(row['timestamp']) : null;
         var tsStr   = ts && !isNaN(ts) ? ts.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: '2-digit' }) : '';
@@ -367,6 +390,60 @@
         tr.addEventListener('click', function () { detailRow.style.display = detailRow.style.display !== 'none' ? 'none' : ''; });
         tbody.appendChild(tr); tbody.appendChild(detailRow);
       });
+    }
+
+    // ── top senders / domains ─────────────────────────────────────────────────
+    function renderTopSenders(rows) {
+      var senderCounts = {}, domainCounts = {};
+      (rows || []).forEach(function (row) {
+        var s = row['sender'] || '';
+        if (s) senderCounts[s] = (senderCounts[s] || 0) + 1;
+        var m = s.match(/<([^>]+)>/);
+        var email = m ? m[1] : s.trim();
+        var domain = email.split('@').pop().toLowerCase();
+        if (domain && domain.indexOf('.') !== -1) domainCounts[domain] = (domainCounts[domain] || 0) + 1;
+      });
+
+      function buildList(containerId, counts, isEmail) {
+        var el = document.getElementById(containerId);
+        el.innerHTML = '';
+        var sorted = Object.keys(counts).sort(function (a, b) { return counts[b] - counts[a]; }).slice(0, 8);
+        if (!sorted.length) { el.innerHTML = '<span style="font-size:12px;color:var(--muted)">none</span>'; return; }
+        sorted.forEach(function (name) {
+          var div = document.createElement('div'); div.className = 'top-item';
+          var nm  = document.createElement('span'); nm.className = 'top-item-name'; nm.textContent = name; nm.title = name;
+          var cnt = document.createElement('span'); cnt.className = 'top-item-count'; cnt.textContent = counts[name];
+          var acts = document.createElement('div'); acts.className = 'top-item-actions';
+          var listKey = isEmail ? 'excluded_emails' : 'excluded_domains';
+          var pKey    = isEmail ? 'protected_emails' : 'protected_domains';
+          var val     = isEmail ? (name.match(/<([^>]+)>/) ? name.match(/<([^>]+)>/)[1] : name.trim()) : name;
+          var spamBtn = document.createElement('button'); spamBtn.className = 'sm-btn danger'; spamBtn.textContent = 'exclude';
+          spamBtn.title = 'add to ' + listKey;
+          spamBtn.addEventListener('click', function () {
+            spamBtn.disabled = true;
+            cfgPost({ key: listKey, op: 'add', value: val }, function (d) {
+              spamBtn.disabled = false;
+              setMsg('cfgMsg', d.success ? 'added to ' + listKey : 'error: ' + (d.error || 'unknown'));
+            });
+          });
+          var protBtn = document.createElement('button'); protBtn.className = 'sm-btn'; protBtn.textContent = 'protect';
+          protBtn.title = 'add to ' + pKey;
+          protBtn.addEventListener('click', function () {
+            protBtn.disabled = true;
+            cfgPost({ key: pKey, op: 'add', value: val }, function (d) {
+              protBtn.disabled = false;
+              setMsg('cfgMsg', d.success ? 'added to ' + pKey : 'error: ' + (d.error || 'unknown'));
+            });
+          });
+          acts.appendChild(spamBtn); acts.appendChild(protBtn);
+          div.appendChild(nm); div.appendChild(cnt); div.appendChild(acts);
+          el.appendChild(div);
+        });
+      }
+
+      buildList('topSenders', senderCounts, true);
+      buildList('topDomains', domainCounts, false);
+      document.getElementById('topGrid').style.display = '';
     }
 
     // ── triggers ─────────────────────────────────────────────────────────────
@@ -474,17 +551,15 @@
           tag.dataset.value = item.v;
           var txt = document.createElement('span'); txt.textContent = item.v;
           tag.appendChild(txt);
-          if (item.dynamic) {
-            var rm = document.createElement('button'); rm.className = 'config-tag-rm'; rm.textContent = '×';
-            rm.title = 'remove';
-            rm.addEventListener('click', function () {
-              cfgPost({ key: key, op: 'remove', value: item.v }, function (d) {
-                if (d.success) tag.remove();
-                else setMsg('cfgMsg', 'error: ' + (d.error || 'unknown'));
-              });
+          var rm = document.createElement('button'); rm.className = 'config-tag-rm'; rm.textContent = '×';
+          rm.title = 'remove';
+          rm.addEventListener('click', function () {
+            cfgPost({ key: key, op: 'remove', value: item.v }, function (d) {
+              if (d.success) tag.remove();
+              else setMsg('cfgMsg', 'error: ' + (d.error || 'unknown'));
             });
-            tag.appendChild(rm);
-          }
+          });
+          tag.appendChild(rm);
           items.appendChild(tag);
         });
 
