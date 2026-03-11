@@ -42,7 +42,6 @@
 
     .wrap { max-width: 960px; margin: 0 auto; padding: 40px 28px; }
 
-    /* stat grid */
     .stat-section { margin-bottom: 40px; }
     .stat-section-title {
       font-size: 10px; letter-spacing: .18em; text-transform: uppercase;
@@ -60,7 +59,6 @@
     .stat-value { font-size: 26px; font-weight: 600; color: var(--fg); letter-spacing: -.01em; }
     .stat-sub { font-size: 11px; color: var(--muted); margin-top: 2px; }
 
-    /* period tabs */
     .period-tabs { display: flex; gap: 4px; margin-bottom: 24px; }
     .period-tab {
       background: none; border: 1px solid var(--border); color: var(--muted);
@@ -71,7 +69,6 @@
     .period-tab.active { color: var(--fg); border-color: var(--fg); background: var(--card-bg); }
     .period-tab:hover { color: var(--fg); border-color: var(--fg); }
 
-    /* controls */
     .controls { display: flex; gap: 10px; margin-bottom: 40px; flex-wrap: wrap; align-items: center; }
     .ctrl-btn {
       background: none; border: 1px solid var(--border); color: var(--muted);
@@ -83,7 +80,6 @@
     .ctrl-btn:disabled { opacity: .4; cursor: not-allowed; }
     .ctrl-msg { font-size: 12px; color: var(--muted); }
 
-    /* recent rows table */
     .section-title {
       font-size: 10px; letter-spacing: .18em; text-transform: uppercase;
       color: var(--muted); margin-bottom: 14px;
@@ -101,11 +97,10 @@
     td { padding: 9px 10px; vertical-align: top; }
     td.ts { white-space: nowrap; color: var(--muted); font-size: 12px; width: 110px; }
     td.sender { max-width: 200px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-    td.subject { max-width: 260px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-    td.action { white-space: nowrap; }
+    td.subject { max-width: 240px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    td.action-col { max-width: 160px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
     td.score { text-align: right; color: var(--muted); font-size: 12px; width: 50px; }
 
-    /* expanded detail row */
     tr.detail-row td { padding: 0; background: var(--card-bg); }
     .detail-inner {
       padding: 14px 18px; font-size: 12px; line-height: 1.6;
@@ -114,8 +109,17 @@
     }
     .detail-key { color: var(--muted); font-size: 10px; letter-spacing: .1em; text-transform: uppercase; padding-top: 2px; }
     .detail-val { word-break: break-word; }
+    .unmark-btn {
+      margin-top: 10px; grid-column: 1 / -1;
+      background: none; border: 1px solid var(--border); color: var(--muted);
+      font-size: 10px; letter-spacing: .1em; text-transform: uppercase;
+      padding: 5px 12px; border-radius: 5px; cursor: pointer; font-family: var(--font);
+      transition: color 150ms, border-color 150ms; width: fit-content;
+    }
+    .unmark-btn:hover { color: var(--fg); border-color: var(--fg); }
+    .unmark-btn:disabled { opacity: .4; cursor: not-allowed; }
+    .unmark-msg { grid-column: 1 / -1; font-size: 11px; color: var(--muted); margin-top: 4px; }
 
-    /* spinner */
     .loading { text-align: center; padding: 60px; color: var(--muted); font-size: 12px; letter-spacing: .1em; text-transform: uppercase; }
 
     @media (max-width: 600px) {
@@ -158,11 +162,7 @@
       <span class="ctrl-msg" id="ctrlMsg"></span>
     </div>
 
-    <div style="display:flex;align-items:center;gap:14px;margin-bottom:14px">
-      <div class="section-title" style="margin-bottom:0">recent activity</div>
-      <button id="btnReveal" class="hd-btn" style="font-size:10px;padding:4px 10px">reveal senders &amp; subjects</button>
-      <span id="revealNote" style="font-size:11px;color:var(--muted)">masked by default</span>
-    </div>
+    <div class="section-title">recent activity</div>
     <div class="tbl-wrap">
       <table>
         <thead>
@@ -185,13 +185,12 @@
     (function () {
       var dashData = null;
       var currentPeriod = 'last7d';
-      var detailsMode = 'masked';
+      var CACHE_KEY = 'spam-dash-v1';
 
       document.getElementById('logoutBtn').addEventListener('click', function () {
         fetch('/auth/logout', { method: 'POST' }).then(function () { location.href = '/'; });
       });
 
-      // period tabs
       document.getElementById('periodTabs').addEventListener('click', function (e) {
         var btn = e.target.closest('.period-tab');
         if (!btn) return;
@@ -201,63 +200,57 @@
         if (dashData) renderStats(dashData.stats);
       });
 
-      // reveal toggle
-      document.getElementById('btnReveal').addEventListener('click', function () {
-        if (detailsMode === 'full') {
-          detailsMode = 'masked';
-          this.textContent = 'reveal senders & subjects';
-          document.getElementById('revealNote').textContent = 'masked by default';
-        } else {
-          detailsMode = 'full';
-          this.textContent = 'hide senders & subjects';
-          document.getElementById('revealNote').textContent = 'showing full data';
+      // show cached data immediately, then refresh in background
+      try {
+        var cached = JSON.parse(sessionStorage.getItem(CACHE_KEY));
+        if (cached) {
+          dashData = cached;
+          renderStats(cached.stats);
+          renderRows(cached.recentRows);
+          document.getElementById('loading').style.display = 'none';
+          document.getElementById('main').style.display = '';
         }
-        loadDashboard(true);
-      });
+      } catch (e) {}
 
-      // auth check
-      fetch('/auth/me')
-        .then(function (r) { return r.json(); })
-        .then(function (d) {
-          if (!d.loggedIn) { location.href = '/'; return; }
-          loadDashboard(false);
-        })
-        .catch(function () { location.href = '/'; });
+      loadDashboard();
 
-      function loadDashboard(rowsOnly) {
-        var url = '/api/email-spam/dashboard?details=' + detailsMode;
-        fetch(url)
-          .then(function (r) { return r.json(); })
+      function loadDashboard() {
+        fetch('/api/email-spam/dashboard')
+          .then(function (r) {
+            if (r.status === 401) { location.href = '/'; return null; }
+            return r.json();
+          })
           .then(function (resp) {
-            if (!rowsOnly) {
-              document.getElementById('loading').style.display = 'none';
-              document.getElementById('main').style.display = '';
-            }
+            if (!resp) return;
+            document.getElementById('loading').style.display = 'none';
+            document.getElementById('main').style.display = '';
             if (!resp.success || !resp.data) {
-              document.getElementById('main').innerHTML = '<p style="color:var(--muted);font-size:12px">error: ' + (resp.error || 'unknown') + '</p>';
+              if (!dashData) document.getElementById('main').innerHTML =
+                '<p style="color:var(--muted);font-size:12px">error: ' + esc(resp.error || 'unknown') + '</p>';
               return;
             }
             dashData = resp.data;
-            if (!rowsOnly) renderStats(dashData.stats);
+            try { sessionStorage.setItem(CACHE_KEY, JSON.stringify(dashData)); } catch (e) {}
+            renderStats(dashData.stats);
             renderRows(dashData.recentRows);
           })
           .catch(function () {
-            if (!rowsOnly) document.getElementById('loading').textContent = 'failed to load dashboard';
+            if (!dashData) document.getElementById('loading').textContent = 'failed to load dashboard';
           });
       }
 
       function renderStats(stats) {
         var s = stats[currentPeriod] || {};
-        document.getElementById('s-spam').textContent = s.spam !== undefined ? s.spam : '—';
-        document.getElementById('s-confirmed').textContent = s.unsubConfirmed !== undefined ? s.unsubConfirmed : '—';
-        document.getElementById('s-attempted').textContent = s.unsubAttempted !== undefined ? s.unsubAttempted : '—';
-        document.getElementById('s-nolink').textContent = s.noLink !== undefined ? s.noLink : '—';
+        document.getElementById('s-spam').textContent      = s.spam              !== undefined ? s.spam              : '—';
+        document.getElementById('s-confirmed').textContent = s.unsubConfirmed    !== undefined ? s.unsubConfirmed    : '—';
+        document.getElementById('s-attempted').textContent = s.unsubAttempted    !== undefined ? s.unsubAttempted    : '—';
+        document.getElementById('s-nolink').textContent    = s.noLink            !== undefined ? s.noLink            : '—';
         if (s.unsubAttempted > 0) {
           var rate = Math.round((s.unsubConfirmed / s.unsubAttempted) * 100);
-          document.getElementById('s-rate').textContent = rate + '%';
+          document.getElementById('s-rate').textContent     = rate + '%';
           document.getElementById('s-rate-sub').textContent = s.unsubConfirmed + ' of ' + s.unsubAttempted;
         } else {
-          document.getElementById('s-rate').textContent = '—';
+          document.getElementById('s-rate').textContent     = '—';
           document.getElementById('s-rate-sub').textContent = '';
         }
       }
@@ -272,8 +265,8 @@
           return;
         }
         rows.forEach(function (row) {
-          var ts = row['timestamp'] ? new Date(row['timestamp']) : null;
-          var tsStr = ts && !isNaN(ts) ? ts.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: '2-digit' }) : '';
+          var ts      = row['timestamp'] ? new Date(row['timestamp']) : null;
+          var tsStr   = ts && !isNaN(ts) ? ts.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: '2-digit' }) : '';
           var sender  = row['sender']  || '';
           var subject = row['subject'] || '';
           var action  = row['action']  || '';
@@ -281,11 +274,11 @@
 
           var tr = document.createElement('tr');
           tr.innerHTML =
-            '<td class="ts">' + esc(tsStr) + '</td>' +
-            '<td class="sender">' + esc(sender) + '</td>' +
-            '<td class="subject">' + esc(subject) + '</td>' +
-            '<td class="action">' + esc(action) + '</td>' +
-            '<td class="score">' + esc(String(score !== '' ? Number(score).toFixed(1) : '')) + '</td>';
+            '<td class="ts">'         + esc(tsStr)   + '</td>' +
+            '<td class="sender">'     + esc(sender)  + '</td>' +
+            '<td class="subject">'    + esc(subject) + '</td>' +
+            '<td class="action-col">' + esc(action)  + '</td>' +
+            '<td class="score">'      + esc(score !== '' ? Number(score).toFixed(1) : '') + '</td>';
 
           var detailRow = document.createElement('tr');
           detailRow.className = 'detail-row';
@@ -294,15 +287,16 @@
           detailTd.colSpan = 5;
           var inner = document.createElement('div');
           inner.className = 'detail-inner';
+
           var fields = [
-            ['timestamp',          row['timestamp'] ? new Date(row['timestamp']).toLocaleString() : ''],
-            ['received at',        row['received at'] || ''],
-            ['sender',             sender],
-            ['subject',            subject],
-            ['body summary',       row['body summary'] || ''],
-            ['action',             action],
-            ['verified unsub',     row['verified unsubscribed'] || ''],
-            ['score',              score !== '' ? String(score) : ''],
+            ['timestamp',      ts && !isNaN(ts) ? ts.toLocaleString() : ''],
+            ['received at',    row['received at'] || ''],
+            ['sender',         sender],
+            ['subject',        subject],
+            ['body summary',   row['body summary'] || ''],
+            ['action',         action],
+            ['verified unsub', row['verified unsubscribed'] !== undefined ? String(row['verified unsubscribed']) : ''],
+            ['score',          score !== '' ? String(score) : ''],
           ];
           fields.forEach(function (pair) {
             if (!pair[1]) return;
@@ -311,6 +305,35 @@
             inner.appendChild(k);
             inner.appendChild(v);
           });
+
+          // unmark button
+          var unmarkBtn = document.createElement('button');
+          unmarkBtn.className = 'unmark-btn';
+          unmarkBtn.textContent = 'unmark as spam';
+          var unmarkMsg = document.createElement('div');
+          unmarkMsg.className = 'unmark-msg';
+          unmarkBtn.addEventListener('click', function (e) {
+            e.stopPropagation();
+            unmarkBtn.disabled = true;
+            unmarkMsg.textContent = 'working…';
+            fetch('/api/email-spam/control', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ action: 'unmark_spam', sender: sender, subject: subject })
+            })
+              .then(function (r) { return r.json(); })
+              .then(function (d) {
+                unmarkBtn.disabled = false;
+                unmarkMsg.textContent = d.success ? (d.message || 'done') : ('error: ' + (d.error || 'unknown'));
+              })
+              .catch(function () {
+                unmarkBtn.disabled = false;
+                unmarkMsg.textContent = 'request failed';
+              });
+          });
+          inner.appendChild(unmarkBtn);
+          inner.appendChild(unmarkMsg);
+
           detailTd.appendChild(inner);
           detailRow.appendChild(detailTd);
 
@@ -324,7 +347,6 @@
         });
       }
 
-      // control buttons
       document.getElementById('btnList').addEventListener('click', function () {
         ctrl('list_triggers', this);
       });
@@ -344,11 +366,9 @@
           .then(function (r) { return r.json(); })
           .then(function (d) {
             btn.disabled = false;
-            if (d.success) {
-              msg.textContent = typeof d.message === 'string' ? d.message : JSON.stringify(d.message);
-            } else {
-              msg.textContent = 'error: ' + (d.error || 'unknown');
-            }
+            msg.textContent = d.success
+              ? (typeof d.message === 'string' ? d.message : JSON.stringify(d.message))
+              : ('error: ' + (d.error || 'unknown'));
           })
           .catch(function () {
             btn.disabled = false;

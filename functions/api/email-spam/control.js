@@ -1,5 +1,7 @@
 import { verifySession } from '../../_auth.js';
 
+const ALLOWED = ['list_triggers', 'install_triggers', 'unmark_spam'];
+
 export async function onRequestPost(context) {
   const { request, env } = context;
 
@@ -17,19 +19,22 @@ export async function onRequestPost(context) {
     return json({ error: 'invalid json' }, 400);
   }
 
-  const action = body.action;
-  if (!['list_triggers', 'install_triggers'].includes(action)) {
-    return json({ error: 'unknown action' }, 400);
-  }
+  const { action, sender, subject } = body;
+  if (!ALLOWED.includes(action)) return json({ error: 'unknown action' }, 400);
 
   const apiUrl   = env.SPAM_APPS_API_URL;
   const apiToken = env.SPAM_APPS_API_TOKEN;
   if (!apiUrl) return json({ error: 'not configured' }, 500);
 
-  const url = apiUrl + '?action=' + action + '&token=' + encodeURIComponent(apiToken || '');
+  let params = '?action=' + action + '&token=' + encodeURIComponent(apiToken || '');
+  if (action === 'unmark_spam') {
+    if (sender)  params += '&sender='  + encodeURIComponent(sender);
+    if (subject) params += '&subject=' + encodeURIComponent(subject);
+  }
+
   let resp;
   try {
-    resp = await fetch(url);
+    resp = await fetch(apiUrl + params);
   } catch {
     return json({ error: 'apps script unreachable' }, 502);
   }
