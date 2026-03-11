@@ -163,14 +163,22 @@
     </div>
 
     <!-- top senders / domains -->
-    <div class="top-grid" id="topGrid" style="display:none">
-      <div>
-        <div class="top-list-title">top senders</div>
-        <div id="topSenders"></div>
+    <div class="section" id="topSection">
+      <div class="section-hd" id="topHd">
+        <span class="section-title">top senders &amp; domains</span>
+        <span class="section-chevron">▼</span>
       </div>
-      <div>
-        <div class="top-list-title">top domains</div>
-        <div id="topDomains"></div>
+      <div class="section-body" id="topBody">
+        <div class="top-grid" id="topGrid">
+          <div>
+            <div class="top-list-title">top senders</div>
+            <div id="topSenders"></div>
+          </div>
+          <div>
+            <div class="top-list-title">top domains</div>
+            <div id="topDomains"></div>
+          </div>
+        </div>
       </div>
     </div>
 
@@ -252,11 +260,11 @@
     });
 
     // ── collapsible sections ─────────────────────────────────────────────────
-    ['trig', 'cfg'].forEach(function (id) {
+    ['trig', 'cfg', 'top'].forEach(function (id) {
       document.getElementById(id + 'Hd').addEventListener('click', function () {
         this.classList.toggle('open');
         document.getElementById(id + 'Body').classList.toggle('open');
-        if (!configData) loadConfig();
+        if ((id === 'trig' || id === 'cfg') && !configData) loadConfig();
       });
     });
 
@@ -443,7 +451,6 @@
 
       buildList('topSenders', senderCounts, true);
       buildList('topDomains', domainCounts, false);
-      document.getElementById('topGrid').style.display = '';
     }
 
     // ── triggers ─────────────────────────────────────────────────────────────
