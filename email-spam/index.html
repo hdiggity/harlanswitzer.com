@@ -8,7 +8,6 @@
     :root {
       --bg: #ffffff;
       --fg: #2b3a2b;
-      --accent: #3a6b3a;
       --muted: rgba(43,58,43,.45);
       --border: rgba(43,58,43,.13);
       --row-alt: rgba(43,58,43,.025);
@@ -16,91 +15,91 @@
       --font: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial;
     }
     * { box-sizing: border-box; margin: 0; padding: 0; }
-    html, body { height: 100%; }
     body { font-family: var(--font); background: var(--bg); color: var(--fg); font-size: 14px; line-height: 1.5; }
 
-    .hd {
-      display: flex; align-items: center; justify-content: space-between;
-      padding: 16px 28px; border-bottom: 1px solid var(--border);
-    }
-    .hd-site {
-      font-size: 11px; letter-spacing: .12em; text-transform: uppercase;
-      color: var(--muted); text-decoration: none; transition: color 150ms;
-    }
+    /* header */
+    .hd { display: flex; align-items: center; justify-content: space-between; padding: 16px 28px; border-bottom: 1px solid var(--border); }
+    .hd-site { font-size: 11px; letter-spacing: .12em; text-transform: uppercase; color: var(--muted); text-decoration: none; transition: color 150ms; }
     .hd-site:hover { color: var(--fg); }
     .hd-right { display: flex; align-items: center; gap: 12px; }
-    .hd-title {
-      font-size: 11px; letter-spacing: .12em; text-transform: uppercase; color: var(--muted);
-    }
-    .hd-btn {
-      background: none; border: 1px solid var(--border); color: var(--muted);
-      font-size: 11px; letter-spacing: .1em; text-transform: uppercase;
-      padding: 6px 14px; border-radius: 6px; cursor: pointer; font-family: var(--font);
-      transition: color 150ms, border-color 150ms;
-    }
+    .hd-title { font-size: 11px; letter-spacing: .12em; text-transform: uppercase; color: var(--muted); }
+    .hd-btn { background: none; border: 1px solid var(--border); color: var(--muted); font-size: 11px; letter-spacing: .1em; text-transform: uppercase; padding: 6px 14px; border-radius: 6px; cursor: pointer; font-family: var(--font); transition: color 150ms, border-color 150ms; }
     .hd-btn:hover { color: var(--fg); border-color: var(--fg); }
     .acct-toggle { display: flex; border: 1px solid var(--border); border-radius: 6px; overflow: hidden; }
-    .acct-btn {
-      background: none; border: none; color: var(--muted);
-      font-size: 10px; letter-spacing: .12em; text-transform: uppercase;
-      padding: 5px 12px; cursor: pointer; font-family: var(--font);
-      transition: color 150ms, background 150ms;
-    }
+    .acct-btn { background: none; border: none; color: var(--muted); font-size: 10px; letter-spacing: .12em; text-transform: uppercase; padding: 5px 12px; cursor: pointer; font-family: var(--font); transition: color 150ms, background 150ms; }
     .acct-btn + .acct-btn { border-left: 1px solid var(--border); }
     .acct-btn.active { background: var(--card-bg); color: var(--fg); }
     .acct-btn:hover:not(.active) { color: var(--fg); }
 
+    /* layout */
     .wrap { max-width: 960px; margin: 0 auto; padding: 40px 28px; }
 
-    .stat-section { margin-bottom: 40px; }
-    .stat-section-title {
-      font-size: 10px; letter-spacing: .18em; text-transform: uppercase;
-      color: var(--muted); margin-bottom: 14px;
-    }
-    .stat-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 12px; }
-    .stat-card {
-      border: 1px solid var(--border); border-radius: 8px;
-      padding: 16px 18px; background: var(--card-bg);
-    }
-    .stat-label {
-      font-size: 10px; letter-spacing: .14em; text-transform: uppercase;
-      color: var(--muted); margin-bottom: 6px;
-    }
-    .stat-value { font-size: 26px; font-weight: 600; color: var(--fg); letter-spacing: -.01em; }
+    /* stats */
+    .stat-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 12px; margin-bottom: 40px; }
+    .stat-card { border: 1px solid var(--border); border-radius: 8px; padding: 16px 18px; background: var(--card-bg); }
+    .stat-label { font-size: 10px; letter-spacing: .14em; text-transform: uppercase; color: var(--muted); margin-bottom: 6px; }
+    .stat-value { font-size: 26px; font-weight: 600; letter-spacing: -.01em; }
     .stat-sub { font-size: 11px; color: var(--muted); margin-top: 2px; }
 
+    /* period tabs */
     .period-tabs { display: flex; gap: 4px; margin-bottom: 24px; }
-    .period-tab {
-      background: none; border: 1px solid var(--border); color: var(--muted);
-      font-size: 10px; letter-spacing: .14em; text-transform: uppercase;
-      padding: 5px 12px; border-radius: 5px; cursor: pointer; font-family: var(--font);
-      transition: color 150ms, border-color 150ms, background 150ms;
-    }
+    .period-tab { background: none; border: 1px solid var(--border); color: var(--muted); font-size: 10px; letter-spacing: .14em; text-transform: uppercase; padding: 5px 12px; border-radius: 5px; cursor: pointer; font-family: var(--font); transition: color 150ms, border-color 150ms, background 150ms; }
     .period-tab.active { color: var(--fg); border-color: var(--fg); background: var(--card-bg); }
     .period-tab:hover { color: var(--fg); border-color: var(--fg); }
 
-    .controls { display: flex; gap: 10px; margin-bottom: 40px; flex-wrap: wrap; align-items: center; }
-    .ctrl-btn {
-      background: none; border: 1px solid var(--border); color: var(--muted);
-      font-size: 11px; letter-spacing: .1em; text-transform: uppercase;
-      padding: 7px 16px; border-radius: 6px; cursor: pointer; font-family: var(--font);
-      transition: color 150ms, border-color 150ms;
-    }
-    .ctrl-btn:hover { color: var(--fg); border-color: var(--fg); }
-    .ctrl-btn:disabled { opacity: .4; cursor: not-allowed; }
-    .ctrl-msg { font-size: 12px; color: var(--muted); }
+    /* collapsible section */
+    .section { margin-bottom: 32px; border: 1px solid var(--border); border-radius: 8px; overflow: hidden; }
+    .section-hd { display: flex; align-items: center; justify-content: space-between; padding: 12px 18px; cursor: pointer; user-select: none; background: var(--card-bg); }
+    .section-hd:hover { background: rgba(43,58,43,.07); }
+    .section-title { font-size: 10px; letter-spacing: .18em; text-transform: uppercase; color: var(--muted); }
+    .section-chevron { font-size: 10px; color: var(--muted); transition: transform 150ms; }
+    .section-hd.open .section-chevron { transform: rotate(180deg); }
+    .section-body { padding: 18px; border-top: 1px solid var(--border); display: none; }
+    .section-body.open { display: block; }
 
-    .section-title {
-      font-size: 10px; letter-spacing: .18em; text-transform: uppercase;
-      color: var(--muted); margin-bottom: 14px;
-    }
+    /* small button */
+    .sm-btn { background: none; border: 1px solid var(--border); color: var(--muted); font-size: 10px; letter-spacing: .1em; text-transform: uppercase; padding: 4px 10px; border-radius: 5px; cursor: pointer; font-family: var(--font); transition: color 150ms, border-color 150ms; white-space: nowrap; }
+    .sm-btn:hover { color: var(--fg); border-color: var(--fg); }
+    .sm-btn:disabled { opacity: .4; cursor: not-allowed; }
+    .sm-btn.danger:hover { color: #c0392b; border-color: #c0392b; }
+    .sm-btn.primary { color: var(--fg); border-color: var(--fg); }
+
+    /* triggers table */
+    .trigger-row { display: flex; align-items: center; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid var(--border); gap: 12px; }
+    .trigger-row:last-child { border-bottom: none; }
+    .trigger-fn { font-size: 13px; font-family: monospace; }
+    .trigger-actions { display: flex; gap: 8px; align-items: center; }
+    .trigger-msg { font-size: 11px; color: var(--muted); }
+
+    /* config lists */
+    .config-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
+    @media (max-width: 640px) { .config-grid { grid-template-columns: 1fr; } }
+    .config-list-section { margin-bottom: 0; }
+    .config-list-title { font-size: 10px; letter-spacing: .14em; text-transform: uppercase; color: var(--muted); margin-bottom: 8px; }
+    .config-items { display: flex; flex-wrap: wrap; gap: 6px; min-height: 28px; margin-bottom: 8px; }
+    .config-tag { display: flex; align-items: center; gap: 4px; font-size: 12px; background: var(--card-bg); border: 1px solid var(--border); border-radius: 4px; padding: 2px 8px; }
+    .config-tag.static { opacity: .55; }
+    .config-tag-rm { background: none; border: none; color: var(--muted); font-size: 14px; cursor: pointer; padding: 0 2px; line-height: 1; }
+    .config-tag-rm:hover { color: #c0392b; }
+    .config-add { display: flex; gap: 6px; }
+    .config-add input { flex: 1; border: 1px solid var(--border); border-radius: 5px; padding: 4px 8px; font-size: 12px; font-family: var(--font); color: var(--fg); background: var(--bg); outline: none; }
+    .config-add input:focus { border-color: var(--fg); }
+
+    /* thresholds */
+    .threshold-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 12px; margin-bottom: 24px; }
+    .threshold-item { display: flex; flex-direction: column; gap: 4px; }
+    .threshold-label { font-size: 10px; letter-spacing: .1em; text-transform: uppercase; color: var(--muted); }
+    .threshold-row { display: flex; gap: 6px; align-items: center; }
+    .threshold-row input { width: 80px; border: 1px solid var(--border); border-radius: 5px; padding: 4px 8px; font-size: 13px; font-family: var(--font); color: var(--fg); background: var(--bg); outline: none; }
+    .threshold-row input:focus { border-color: var(--fg); }
+
+    /* ctrl msg */
+    .ctrl-msg { font-size: 12px; color: var(--muted); margin-top: 12px; min-height: 16px; }
+
+    /* recent activity table */
     .tbl-wrap { overflow-x: auto; }
     table { width: 100%; border-collapse: collapse; font-size: 13px; }
-    thead th {
-      text-align: left; font-size: 10px; letter-spacing: .14em; text-transform: uppercase;
-      color: var(--muted); font-weight: 500; padding: 8px 10px;
-      border-bottom: 1px solid var(--border);
-    }
+    thead th { text-align: left; font-size: 10px; letter-spacing: .14em; text-transform: uppercase; color: var(--muted); font-weight: 500; padding: 8px 10px; border-bottom: 1px solid var(--border); }
     tbody tr { border-bottom: 1px solid var(--border); cursor: pointer; }
     tbody tr:nth-child(even) { background: var(--row-alt); }
     tbody tr:hover { background: var(--card-bg); }
@@ -110,33 +109,18 @@
     td.subject { max-width: 240px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
     td.action-col { max-width: 160px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
     td.score { text-align: right; color: var(--muted); font-size: 12px; width: 50px; }
-
     tr.detail-row td { padding: 0; background: var(--card-bg); }
-    .detail-inner {
-      padding: 14px 18px; font-size: 12px; line-height: 1.6;
-      border-top: 1px dashed var(--border);
-      display: grid; grid-template-columns: 120px 1fr; gap: 4px 14px;
-    }
+    .detail-inner { padding: 14px 18px; font-size: 12px; line-height: 1.6; border-top: 1px dashed var(--border); display: grid; grid-template-columns: 120px 1fr; gap: 4px 14px; }
     .detail-key { color: var(--muted); font-size: 10px; letter-spacing: .1em; text-transform: uppercase; padding-top: 2px; }
     .detail-val { word-break: break-word; }
-    .unmark-btn {
-      margin-top: 10px; grid-column: 1 / -1;
-      background: none; border: 1px solid var(--border); color: var(--muted);
-      font-size: 10px; letter-spacing: .1em; text-transform: uppercase;
-      padding: 5px 12px; border-radius: 5px; cursor: pointer; font-family: var(--font);
-      transition: color 150ms, border-color 150ms; width: fit-content;
-    }
+    .unmark-btn { margin-top: 10px; grid-column: 1 / -1; background: none; border: 1px solid var(--border); color: var(--muted); font-size: 10px; letter-spacing: .1em; text-transform: uppercase; padding: 5px 12px; border-radius: 5px; cursor: pointer; font-family: var(--font); transition: color 150ms, border-color 150ms; width: fit-content; }
     .unmark-btn:hover { color: var(--fg); border-color: var(--fg); }
     .unmark-btn:disabled { opacity: .4; cursor: not-allowed; }
     .unmark-msg { grid-column: 1 / -1; font-size: 11px; color: var(--muted); margin-top: 4px; }
 
     .loading { text-align: center; padding: 60px; color: var(--muted); font-size: 12px; letter-spacing: .1em; text-transform: uppercase; }
 
-    @media (max-width: 600px) {
-      .hd { padding: 14px 18px; }
-      .wrap { padding: 28px 16px; }
-      .stat-grid { grid-template-columns: 1fr 1fr; }
-    }
+    @media (max-width: 600px) { .hd { padding: 14px 18px; } .wrap { padding: 28px 16px; } .stat-grid { grid-template-columns: 1fr 1fr; } }
   </style>
 </head>
 <body>
@@ -153,41 +137,54 @@
   </header>
 
   <div id="main" class="wrap" style="display:none">
+
+    <!-- stats -->
     <div class="period-tabs" id="periodTabs">
       <button class="period-tab active" data-period="last7d">7 days</button>
       <button class="period-tab" data-period="last30d">30 days</button>
       <button class="period-tab" data-period="total">all time</button>
     </div>
+    <div class="stat-grid" id="statGrid">
+      <div class="stat-card"><div class="stat-label">spam</div><div class="stat-value" id="s-spam">—</div></div>
+      <div class="stat-card"><div class="stat-label">unsubscribed</div><div class="stat-value" id="s-confirmed">—</div></div>
+      <div class="stat-card"><div class="stat-label">attempted</div><div class="stat-value" id="s-attempted">—</div></div>
+      <div class="stat-card"><div class="stat-label">no link</div><div class="stat-value" id="s-nolink">—</div></div>
+      <div class="stat-card"><div class="stat-label">success rate</div><div class="stat-value" id="s-rate">—</div><div class="stat-sub" id="s-rate-sub"></div></div>
+    </div>
 
-    <div class="stat-section">
-      <div class="stat-section-title">stats</div>
-      <div class="stat-grid" id="statGrid">
-        <div class="stat-card"><div class="stat-label">spam</div><div class="stat-value" id="s-spam">—</div></div>
-        <div class="stat-card"><div class="stat-label">unsubscribed</div><div class="stat-value" id="s-confirmed">—</div></div>
-        <div class="stat-card"><div class="stat-label">attempted</div><div class="stat-value" id="s-attempted">—</div></div>
-        <div class="stat-card"><div class="stat-label">no link</div><div class="stat-value" id="s-nolink">—</div></div>
-        <div class="stat-card"><div class="stat-label">success rate</div><div class="stat-value" id="s-rate">—</div><div class="stat-sub" id="s-rate-sub"></div></div>
+    <!-- triggers -->
+    <div class="section" id="trigSection">
+      <div class="section-hd" id="trigHd">
+        <span class="section-title">triggers</span>
+        <span class="section-chevron">▼</span>
+      </div>
+      <div class="section-body" id="trigBody">
+        <div id="trigList"><span style="font-size:12px;color:var(--muted)">loading…</span></div>
+        <div style="margin-top:14px;display:flex;gap:10px;align-items:center;flex-wrap:wrap">
+          <button class="sm-btn primary" id="btnInstall">install default triggers</button>
+          <span class="ctrl-msg" id="trigMsg"></span>
+        </div>
       </div>
     </div>
 
-    <div class="controls">
-      <button class="ctrl-btn" id="btnList">list triggers</button>
-      <button class="ctrl-btn" id="btnInstall">install triggers</button>
-      <span class="ctrl-msg" id="ctrlMsg"></span>
+    <!-- config -->
+    <div class="section" id="cfgSection">
+      <div class="section-hd" id="cfgHd">
+        <span class="section-title">filter config</span>
+        <span class="section-chevron">▼</span>
+      </div>
+      <div class="section-body" id="cfgBody">
+        <div id="cfgThresholds" class="threshold-grid"></div>
+        <div id="cfgLists" class="config-grid"></div>
+        <div class="ctrl-msg" id="cfgMsg"></div>
+      </div>
     </div>
 
-    <div class="section-title">recent activity</div>
+    <!-- recent activity -->
+    <div class="section-title" style="font-size:10px;letter-spacing:.18em;text-transform:uppercase;color:var(--muted);margin-bottom:14px">recent activity</div>
     <div class="tbl-wrap">
       <table>
-        <thead>
-          <tr>
-            <th>date</th>
-            <th>sender</th>
-            <th>subject</th>
-            <th>action</th>
-            <th style="text-align:right">score</th>
-          </tr>
-        </thead>
+        <thead><tr><th>date</th><th>sender</th><th>subject</th><th>action</th><th style="text-align:right">score</th></tr></thead>
         <tbody id="tblBody"></tbody>
       </table>
     </div>
@@ -196,242 +193,359 @@
   <div id="loading" class="loading">loading…</div>
 
   <script>
-    (function () {
-      var dashData = null;
-      var currentPeriod = 'last7d';
-      var currentAccount = 'personal';
+  (function () {
+    var dashData   = null;
+    var configData = null;
+    var currentPeriod  = 'last7d';
+    var currentAccount = 'personal';
+    var isAdmin = false;
 
-      document.getElementById('logoutBtn').addEventListener('click', function () {
-        fetch('/auth/logout', { method: 'POST' }).then(function () { location.href = '/'; });
+    // ── header ──────────────────────────────────────────────────────────────
+    document.getElementById('logoutBtn').addEventListener('click', function () {
+      fetch('/auth/logout', { method: 'POST' }).then(function () { location.href = '/'; });
+    });
+
+    document.getElementById('periodTabs').addEventListener('click', function (e) {
+      var btn = e.target.closest('.period-tab');
+      if (!btn) return;
+      document.querySelectorAll('.period-tab').forEach(function (t) { t.classList.remove('active'); });
+      btn.classList.add('active');
+      currentPeriod = btn.dataset.period;
+      if (dashData) renderStats(dashData.stats);
+    });
+
+    document.getElementById('acctToggle').addEventListener('click', function (e) {
+      var btn = e.target.closest('.acct-btn');
+      if (!btn || btn.classList.contains('active')) return;
+      var acct = btn.dataset.acct;
+      document.querySelectorAll('.acct-btn').forEach(function (b) { b.classList.remove('active'); });
+      btn.classList.add('active');
+      currentAccount = acct;
+      fetch('/api/email-spam/account', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ account: acct }) });
+      dashData = null; configData = null;
+      document.getElementById('tblBody').innerHTML = '';
+      document.getElementById('trigList').innerHTML = '<span style="font-size:12px;color:var(--muted)">loading…</span>';
+      loadDashboard();
+      loadConfig();
+    });
+
+    // ── collapsible sections ─────────────────────────────────────────────────
+    ['trig', 'cfg'].forEach(function (id) {
+      document.getElementById(id + 'Hd').addEventListener('click', function () {
+        this.classList.toggle('open');
+        document.getElementById(id + 'Body').classList.toggle('open');
+        if (!configData) loadConfig();
       });
+    });
 
-      document.getElementById('periodTabs').addEventListener('click', function (e) {
-        var btn = e.target.closest('.period-tab');
-        if (!btn) return;
-        document.querySelectorAll('.period-tab').forEach(function (t) { t.classList.remove('active'); });
-        btn.classList.add('active');
-        currentPeriod = btn.dataset.period;
-        if (dashData) renderStats(dashData.stats);
-      });
-
-      document.getElementById('acctToggle').addEventListener('click', function (e) {
-        var btn = e.target.closest('.acct-btn');
-        if (!btn || btn.classList.contains('active')) return;
-        var acct = btn.dataset.acct;
-        document.querySelectorAll('.acct-btn').forEach(function (b) { b.classList.remove('active'); });
-        btn.classList.add('active');
-        currentAccount = acct;
-        fetch('/api/email-spam/account', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ account: acct })
+    // ── init ─────────────────────────────────────────────────────────────────
+    fetch('/api/email-spam/account')
+      .then(function (r) { if (r.status === 401) { location.href = '/'; return null; } return r.json(); })
+      .then(function (d) {
+        if (!d) return;
+        currentAccount = d.account || 'personal';
+        document.querySelectorAll('.acct-btn').forEach(function (b) {
+          b.classList.toggle('active', b.dataset.acct === currentAccount);
         });
-        dashData = null;
-        document.getElementById('tblBody').innerHTML = '';
-        loadDashboard();
-      });
-
-      // load account preference, show cached data, then fresh load
-      fetch('/api/email-spam/account')
-        .then(function (r) {
-          if (r.status === 401) { location.href = '/'; return null; }
-          return r.json();
-        })
-        .then(function (d) {
-          if (!d) return;
-          currentAccount = d.account || 'personal';
-          document.querySelectorAll('.acct-btn').forEach(function (b) {
-            b.classList.toggle('active', b.dataset.acct === currentAccount);
-          });
-          // show cached data for this account immediately
-          try {
-            var cached = JSON.parse(sessionStorage.getItem('spam-dash-' + currentAccount));
-            if (cached) {
-              dashData = cached;
-              renderStats(cached.stats);
-              renderRows(cached.recentRows);
-              document.getElementById('loading').style.display = 'none';
-              document.getElementById('main').style.display = '';
-            }
-          } catch (e) {}
-          loadDashboard();
-        })
-        .catch(function () { loadDashboard(); });
-
-      function loadDashboard() {
-        fetch('/api/email-spam/dashboard')
-          .then(function (r) {
-            if (r.status === 401) { location.href = '/'; return null; }
-            return r.json();
-          })
-          .then(function (resp) {
-            if (!resp) return;
+        // show cache
+        try {
+          var cached = JSON.parse(sessionStorage.getItem('spam-dash-' + currentAccount));
+          if (cached) {
+            dashData = cached;
+            renderStats(cached.stats);
+            renderRows(cached.recentRows);
             document.getElementById('loading').style.display = 'none';
             document.getElementById('main').style.display = '';
-            if (!resp.success || !resp.data) {
-              if (!dashData) document.getElementById('main').innerHTML =
-                '<p style="color:var(--muted);font-size:12px">error: ' + esc(resp.error || 'unknown') + '</p>';
-              return;
-            }
-            dashData = resp.data;
-            try { sessionStorage.setItem('spam-dash-' + currentAccount, JSON.stringify(dashData)); } catch (e) {}
-            renderStats(dashData.stats);
-            renderRows(dashData.recentRows);
-          })
-          .catch(function () {
-            if (!dashData) document.getElementById('loading').textContent = 'failed to load dashboard';
-          });
-      }
+          }
+        } catch (e) {}
+        // check admin
+        fetch('/auth/me').then(function (r) { return r.json(); }).then(function (me) {
+          isAdmin = !!(me && me.isAdmin);
+        }).catch(function () {});
+        loadDashboard();
+      })
+      .catch(function () { loadDashboard(); });
 
-      function renderStats(stats) {
-        var s = stats[currentPeriod] || {};
-        document.getElementById('s-spam').textContent      = s.spam              !== undefined ? s.spam              : '—';
-        document.getElementById('s-confirmed').textContent = s.unsubConfirmed    !== undefined ? s.unsubConfirmed    : '—';
-        document.getElementById('s-attempted').textContent = s.unsubAttempted    !== undefined ? s.unsubAttempted    : '—';
-        document.getElementById('s-nolink').textContent    = s.noLink            !== undefined ? s.noLink            : '—';
-        if (s.unsubAttempted > 0) {
-          var rate = Math.round((s.unsubConfirmed / s.unsubAttempted) * 100);
-          document.getElementById('s-rate').textContent     = rate + '%';
-          document.getElementById('s-rate-sub').textContent = s.unsubConfirmed + ' of ' + s.unsubAttempted;
-        } else {
-          document.getElementById('s-rate').textContent     = '—';
-          document.getElementById('s-rate-sub').textContent = '';
-        }
-      }
-
-      function renderRows(rows) {
-        var tbody = document.getElementById('tblBody');
-        tbody.innerHTML = '';
-        if (!rows || !rows.length) {
-          var tr = document.createElement('tr');
-          tr.innerHTML = '<td colspan="5" style="color:var(--muted);text-align:center;padding:20px">no data</td>';
-          tbody.appendChild(tr);
-          return;
-        }
-        // sort newest first
-        rows = rows.slice().sort(function (a, b) {
-          return new Date(b['timestamp'] || 0) - new Date(a['timestamp'] || 0);
-        });
-        rows.forEach(function (row) {
-          var ts      = row['timestamp'] ? new Date(row['timestamp']) : null;
-          var tsStr   = ts && !isNaN(ts) ? ts.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: '2-digit' }) : '';
-          var sender  = row['sender']  || '';
-          var subject = row['subject'] || '';
-          var action  = row['action']  || '';
-          var score   = row['score']   !== undefined ? row['score'] : '';
-
-          var tr = document.createElement('tr');
-          tr.innerHTML =
-            '<td class="ts">'         + esc(tsStr)   + '</td>' +
-            '<td class="sender">'     + esc(sender)  + '</td>' +
-            '<td class="subject">'    + esc(subject) + '</td>' +
-            '<td class="action-col">' + esc(action)  + '</td>' +
-            '<td class="score">'      + esc(score !== '' ? Number(score).toFixed(1) : '') + '</td>';
-
-          var detailRow = document.createElement('tr');
-          detailRow.className = 'detail-row';
-          detailRow.style.display = 'none';
-          var detailTd = document.createElement('td');
-          detailTd.colSpan = 5;
-          var inner = document.createElement('div');
-          inner.className = 'detail-inner';
-
-          var fields = [
-            ['timestamp',      ts && !isNaN(ts) ? ts.toLocaleString() : ''],
-            ['received at',    row['received at'] || ''],
-            ['sender',         sender],
-            ['subject',        subject],
-            ['body summary',   row['body summary'] || ''],
-            ['action',         action],
-            ['verified unsub', row['verified unsubscribed'] !== undefined ? String(row['verified unsubscribed']) : ''],
-            ['score',          score !== '' ? String(score) : ''],
-          ];
-          fields.forEach(function (pair) {
-            if (!pair[1]) return;
-            var k = document.createElement('div'); k.className = 'detail-key'; k.textContent = pair[0];
-            var v = document.createElement('div'); v.className = 'detail-val'; v.textContent = pair[1];
-            inner.appendChild(k);
-            inner.appendChild(v);
-          });
-
-          // unmark button
-          var unmarkBtn = document.createElement('button');
-          unmarkBtn.className = 'unmark-btn';
-          unmarkBtn.textContent = 'unmark as spam';
-          var unmarkMsg = document.createElement('div');
-          unmarkMsg.className = 'unmark-msg';
-          unmarkBtn.addEventListener('click', function (e) {
-            e.stopPropagation();
-            unmarkBtn.disabled = true;
-            unmarkMsg.textContent = 'working…';
-            fetch('/api/email-spam/control', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ action: 'unmark_spam', sender: sender, subject: subject })
-            })
-              .then(function (r) { return r.json(); })
-              .then(function (d) {
-                unmarkBtn.disabled = false;
-                unmarkMsg.textContent = d.success ? (d.message || 'done') : ('error: ' + (d.error || 'unknown'));
-              })
-              .catch(function () {
-                unmarkBtn.disabled = false;
-                unmarkMsg.textContent = 'request failed';
-              });
-          });
-          inner.appendChild(unmarkBtn);
-          inner.appendChild(unmarkMsg);
-
-          detailTd.appendChild(inner);
-          detailRow.appendChild(detailTd);
-
-          tr.addEventListener('click', function () {
-            var open = detailRow.style.display !== 'none';
-            detailRow.style.display = open ? 'none' : '';
-          });
-
-          tbody.appendChild(tr);
-          tbody.appendChild(detailRow);
-        });
-      }
-
-      document.getElementById('btnList').addEventListener('click', function () {
-        ctrl('list_triggers', this);
-      });
-      document.getElementById('btnInstall').addEventListener('click', function () {
-        ctrl('install_triggers', this);
-      });
-
-      function ctrl(action, btn) {
-        var msg = document.getElementById('ctrlMsg');
-        btn.disabled = true;
-        msg.textContent = 'working…';
-        fetch('/api/email-spam/control', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ action: action })
+    // ── dashboard ─────────────────────────────────────────────────────────────
+    function loadDashboard() {
+      fetch('/api/email-spam/dashboard')
+        .then(function (r) { if (r.status === 401) { location.href = '/'; return null; } return r.json(); })
+        .then(function (resp) {
+          if (!resp) return;
+          document.getElementById('loading').style.display = 'none';
+          document.getElementById('main').style.display = '';
+          if (!resp.success || !resp.data) {
+            if (!dashData) document.getElementById('main').innerHTML = '<p style="color:var(--muted);font-size:12px">error: ' + esc(resp.error || 'unknown') + '</p>';
+            return;
+          }
+          dashData = resp.data;
+          try { sessionStorage.setItem('spam-dash-' + currentAccount, JSON.stringify(dashData)); } catch (e) {}
+          renderStats(dashData.stats);
+          renderRows(dashData.recentRows);
         })
-          .then(function (r) { return r.json(); })
-          .then(function (d) {
-            btn.disabled = false;
-            msg.textContent = d.success
-              ? (typeof d.message === 'string' ? d.message : JSON.stringify(d.message))
-              : ('error: ' + (d.error || 'unknown'));
-          })
-          .catch(function () {
-            btn.disabled = false;
-            msg.textContent = 'request failed';
-          });
-      }
+        .catch(function () { if (!dashData) document.getElementById('loading').textContent = 'failed to load'; });
+    }
 
-      function esc(s) {
-        return String(s)
-          .replace(/&/g, '&amp;')
-          .replace(/</g, '&lt;')
-          .replace(/>/g, '&gt;')
-          .replace(/"/g, '&quot;');
+    function renderStats(stats) {
+      var s = stats[currentPeriod] || {};
+      document.getElementById('s-spam').textContent      = s.spam           !== undefined ? s.spam           : '—';
+      document.getElementById('s-confirmed').textContent = s.unsubConfirmed !== undefined ? s.unsubConfirmed : '—';
+      document.getElementById('s-attempted').textContent = s.unsubAttempted !== undefined ? s.unsubAttempted : '—';
+      document.getElementById('s-nolink').textContent    = s.noLink         !== undefined ? s.noLink         : '—';
+      if (s.unsubAttempted > 0) {
+        var rate = Math.round((s.unsubConfirmed / s.unsubAttempted) * 100);
+        document.getElementById('s-rate').textContent     = rate + '%';
+        document.getElementById('s-rate-sub').textContent = s.unsubConfirmed + ' of ' + s.unsubAttempted;
+      } else {
+        document.getElementById('s-rate').textContent     = '—';
+        document.getElementById('s-rate-sub').textContent = '';
       }
-    })();
+    }
+
+    function renderRows(rows) {
+      var tbody = document.getElementById('tblBody');
+      tbody.innerHTML = '';
+      if (!rows || !rows.length) {
+        var tr = document.createElement('tr');
+        tr.innerHTML = '<td colspan="5" style="color:var(--muted);text-align:center;padding:20px">no data</td>';
+        tbody.appendChild(tr); return;
+      }
+      rows = rows.slice().sort(function (a, b) { return new Date(b['timestamp'] || 0) - new Date(a['timestamp'] || 0); });
+      rows.forEach(function (row) {
+        var ts      = row['timestamp'] ? new Date(row['timestamp']) : null;
+        var tsStr   = ts && !isNaN(ts) ? ts.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: '2-digit' }) : '';
+        var sender  = row['sender']  || '';
+        var subject = row['subject'] || '';
+        var action  = row['action']  || '';
+        var score   = row['score']   !== undefined ? row['score'] : '';
+
+        var tr = document.createElement('tr');
+        tr.innerHTML =
+          '<td class="ts">'         + esc(tsStr)   + '</td>' +
+          '<td class="sender">'     + esc(sender)  + '</td>' +
+          '<td class="subject">'    + esc(subject) + '</td>' +
+          '<td class="action-col">' + esc(action)  + '</td>' +
+          '<td class="score">'      + esc(score !== '' ? Number(score).toFixed(1) : '') + '</td>';
+
+        var detailRow = document.createElement('tr');
+        detailRow.className = 'detail-row';
+        detailRow.style.display = 'none';
+        var detailTd = document.createElement('td');
+        detailTd.colSpan = 5;
+        var inner = document.createElement('div');
+        inner.className = 'detail-inner';
+        [
+          ['timestamp',      ts && !isNaN(ts) ? ts.toLocaleString() : ''],
+          ['received at',    row['received at'] || ''],
+          ['sender',         sender],
+          ['subject',        subject],
+          ['body summary',   row['body summary'] || ''],
+          ['action',         action],
+          ['verified unsub', row['verified unsubscribed'] !== undefined ? String(row['verified unsubscribed']) : ''],
+          ['score',          score !== '' ? String(score) : ''],
+        ].forEach(function (pair) {
+          if (!pair[1]) return;
+          var k = document.createElement('div'); k.className = 'detail-key'; k.textContent = pair[0];
+          var v = document.createElement('div'); v.className = 'detail-val'; v.textContent = pair[1];
+          inner.appendChild(k); inner.appendChild(v);
+        });
+        var unmarkBtn = document.createElement('button');
+        unmarkBtn.className = 'unmark-btn';
+        unmarkBtn.textContent = 'unmark as spam';
+        var unmarkMsg = document.createElement('div');
+        unmarkMsg.className = 'unmark-msg';
+        unmarkBtn.addEventListener('click', function (e) {
+          e.stopPropagation();
+          unmarkBtn.disabled = true; unmarkMsg.textContent = 'working…';
+          ctrlReq({ action: 'unmark_spam', sender: sender, subject: subject }, function (d) {
+            unmarkBtn.disabled = false;
+            unmarkMsg.textContent = d.success ? (d.message || 'done') : ('error: ' + (d.error || 'unknown'));
+          });
+        });
+        inner.appendChild(unmarkBtn); inner.appendChild(unmarkMsg);
+        detailTd.appendChild(inner); detailRow.appendChild(detailTd);
+        tr.addEventListener('click', function () { detailRow.style.display = detailRow.style.display !== 'none' ? 'none' : ''; });
+        tbody.appendChild(tr); tbody.appendChild(detailRow);
+      });
+    }
+
+    // ── triggers ─────────────────────────────────────────────────────────────
+    document.getElementById('btnInstall').addEventListener('click', function () {
+      var btn = this; var msg = document.getElementById('trigMsg');
+      btn.disabled = true; msg.textContent = 'installing…';
+      ctrlReq({ action: 'install_triggers' }, function (d) {
+        btn.disabled = false;
+        msg.textContent = d.success ? (d.message || 'done') : ('error: ' + (d.error || 'unknown'));
+        if (d.success) loadConfig(); // refresh trigger list
+      });
+    });
+
+    // ── config ────────────────────────────────────────────────────────────────
+    function loadConfig() {
+      fetch('/api/email-spam/config')
+        .then(function (r) { return r.json(); })
+        .then(function (resp) {
+          if (!resp.success || !resp.data) return;
+          configData = resp.data;
+          renderTriggers(configData.installedTriggers || []);
+          renderThresholds(configData.thresholds || {});
+          renderConfigLists(configData.staticLists || {}, configData.dynamicLists || {});
+        })
+        .catch(function () {});
+    }
+
+    function renderTriggers(triggers) {
+      var el = document.getElementById('trigList');
+      if (!triggers.length) { el.innerHTML = '<span style="font-size:12px;color:var(--muted)">no triggers installed</span>'; return; }
+      el.innerHTML = '';
+      triggers.forEach(function (t) {
+        var row = document.createElement('div');
+        row.className = 'trigger-row';
+        var fn   = document.createElement('span'); fn.className = 'trigger-fn'; fn.textContent = t.fn;
+        var acts = document.createElement('div'); acts.className = 'trigger-actions';
+        var msg  = document.createElement('span'); msg.className = 'trigger-msg';
+        var del  = document.createElement('button'); del.className = 'sm-btn danger'; del.textContent = 'delete';
+        del.addEventListener('click', function () {
+          del.disabled = true; msg.textContent = 'deleting…';
+          ctrlReq({ action: 'delete_trigger', trigger_id: t.id }, function (d) {
+            del.disabled = false;
+            if (d.success) { row.remove(); } else { msg.textContent = 'error: ' + (d.error || 'unknown'); }
+          });
+        });
+        acts.appendChild(msg); acts.appendChild(del);
+        row.appendChild(fn); row.appendChild(acts);
+        el.appendChild(row);
+      });
+    }
+
+    function renderThresholds(thresholds) {
+      var el = document.getElementById('cfgThresholds');
+      el.innerHTML = '';
+      var labels = { spam_threshold: 'spam threshold', spam_history_weight: 'history weight', fetch_delay_ms: 'fetch delay (ms)', unsub_retry_ttl_days: 'unsub retry ttl (days)', unsub_max_items_per_run: 'max unsub / run' };
+      Object.keys(labels).forEach(function (key) {
+        if (thresholds[key] === undefined) return;
+        var wrap = document.createElement('div'); wrap.className = 'threshold-item';
+        var lbl  = document.createElement('div'); lbl.className = 'threshold-label'; lbl.textContent = labels[key];
+        var row  = document.createElement('div'); row.className = 'threshold-row';
+        var inp  = document.createElement('input'); inp.type = 'number'; inp.value = thresholds[key];
+        var btn  = document.createElement('button'); btn.className = 'sm-btn'; btn.textContent = 'save';
+        btn.addEventListener('click', function () {
+          btn.disabled = true;
+          cfgPost({ key: key, op: 'set', value: inp.value }, function (d) {
+            btn.disabled = false;
+            setMsg('cfgMsg', d.success ? 'saved ' + key : 'error: ' + (d.error || 'unknown'));
+          });
+        });
+        row.appendChild(inp); row.appendChild(btn);
+        wrap.appendChild(lbl); wrap.appendChild(row);
+        el.appendChild(wrap);
+      });
+    }
+
+    var LIST_LABELS = {
+      protected_emails:   'protected emails',
+      protected_subjects: 'protected subjects',
+      protected_domains:  'protected domains',
+      excluded_emails:    'excluded emails',
+      excluded_subjects:  'excluded subjects',
+      excluded_domains:   'excluded domains',
+      excluded_words:     'excluded words',
+      excluded_sender_keywords: 'excluded sender keywords',
+      excluded_tlds:      'excluded tlds',
+    };
+
+    function renderConfigLists(staticLists, dynamicLists) {
+      var el = document.getElementById('cfgLists');
+      el.innerHTML = '';
+      Object.keys(LIST_LABELS).forEach(function (key) {
+        var staticItems  = staticLists[key]  || [];
+        var dynamicItems = dynamicLists[key] || [];
+        var allItems     = [];
+        var seen = {};
+        staticItems.forEach(function (v) { if (!seen[v]) { seen[v] = true; allItems.push({ v: v, dynamic: false }); } });
+        dynamicItems.forEach(function (v) { if (!seen[v]) { seen[v] = true; allItems.push({ v: v, dynamic: true }); } });
+
+        var wrap = document.createElement('div'); wrap.className = 'config-list-section';
+        var title = document.createElement('div'); title.className = 'config-list-title'; title.textContent = LIST_LABELS[key];
+        var items = document.createElement('div'); items.className = 'config-items';
+        allItems.forEach(function (item) {
+          var tag = document.createElement('span');
+          tag.className = 'config-tag' + (item.dynamic ? '' : ' static');
+          tag.dataset.value = item.v;
+          var txt = document.createElement('span'); txt.textContent = item.v;
+          tag.appendChild(txt);
+          if (item.dynamic) {
+            var rm = document.createElement('button'); rm.className = 'config-tag-rm'; rm.textContent = '×';
+            rm.title = 'remove';
+            rm.addEventListener('click', function () {
+              cfgPost({ key: key, op: 'remove', value: item.v }, function (d) {
+                if (d.success) tag.remove();
+                else setMsg('cfgMsg', 'error: ' + (d.error || 'unknown'));
+              });
+            });
+            tag.appendChild(rm);
+          }
+          items.appendChild(tag);
+        });
+
+        var addRow = document.createElement('div'); addRow.className = 'config-add';
+        var inp  = document.createElement('input'); inp.placeholder = 'add…'; inp.type = 'text';
+        var btn  = document.createElement('button'); btn.className = 'sm-btn'; btn.textContent = 'add';
+        function doAdd() {
+          var v = inp.value.trim().toLowerCase();
+          if (!v) return;
+          cfgPost({ key: key, op: 'add', value: v }, function (d) {
+            if (d.success) {
+              inp.value = '';
+              // add new tag
+              var tag = document.createElement('span'); tag.className = 'config-tag'; tag.dataset.value = v;
+              var txt = document.createElement('span'); txt.textContent = v; tag.appendChild(txt);
+              var rm = document.createElement('button'); rm.className = 'config-tag-rm'; rm.textContent = '×';
+              rm.addEventListener('click', function () {
+                cfgPost({ key: key, op: 'remove', value: v }, function (d2) { if (d2.success) tag.remove(); });
+              });
+              tag.appendChild(rm); items.appendChild(tag);
+            } else {
+              setMsg('cfgMsg', 'error: ' + (d.error || 'unknown'));
+            }
+          });
+        }
+        btn.addEventListener('click', doAdd);
+        inp.addEventListener('keydown', function (e) { if (e.key === 'Enter') doAdd(); });
+        addRow.appendChild(inp); addRow.appendChild(btn);
+        wrap.appendChild(title); wrap.appendChild(items); wrap.appendChild(addRow);
+        el.appendChild(wrap);
+      });
+    }
+
+    function cfgPost(body, cb) {
+      fetch('/api/email-spam/config', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body)
+      }).then(function (r) { return r.json(); }).then(cb)
+        .catch(function () { cb({ success: false, error: 'request failed' }); });
+    }
+
+    // ── control helper ────────────────────────────────────────────────────────
+    function ctrlReq(body, cb) {
+      fetch('/api/email-spam/control', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body)
+      }).then(function (r) { return r.json(); }).then(cb)
+        .catch(function () { cb({ success: false, error: 'request failed' }); });
+    }
+
+    function setMsg(id, text) {
+      var el = document.getElementById(id);
+      if (el) el.textContent = text;
+    }
+
+    function esc(s) {
+      return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+    }
+  })();
   </script>
 </body>
 </html>

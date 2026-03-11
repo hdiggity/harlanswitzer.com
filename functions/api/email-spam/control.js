@@ -1,6 +1,6 @@
 import { verifySession } from '../../_auth.js';
 
-const ALLOWED_ACTIONS  = ['list_triggers', 'install_triggers', 'unmark_spam'];
+const ALLOWED_ACTIONS  = ['list_triggers', 'install_triggers', 'unmark_spam', 'delete_trigger'];
 const ALLOWED_ACCOUNTS = ['personal', 'spam'];
 
 export async function onRequestPost(context) {
@@ -16,7 +16,7 @@ export async function onRequestPost(context) {
   let body;
   try { body = await request.json(); } catch { return json({ error: 'invalid json' }, 400); }
 
-  const { action, sender, subject, account: accountOverride } = body;
+  const { action, sender, subject, trigger_id, account: accountOverride } = body;
   if (!ALLOWED_ACTIONS.includes(action)) return json({ error: 'unknown action' }, 400);
 
   const { url, token } = await resolveBackend(env, session.user_id, accountOverride);
@@ -26,6 +26,9 @@ export async function onRequestPost(context) {
   if (action === 'unmark_spam') {
     if (sender)  params += '&sender='  + encodeURIComponent(sender);
     if (subject) params += '&subject=' + encodeURIComponent(subject);
+  }
+  if (action === 'delete_trigger' && trigger_id) {
+    params += '&trigger_id=' + encodeURIComponent(trigger_id);
   }
 
   let resp;
