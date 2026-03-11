@@ -39,6 +39,16 @@
       transition: color 150ms, border-color 150ms;
     }
     .hd-btn:hover { color: var(--fg); border-color: var(--fg); }
+    .acct-toggle { display: flex; border: 1px solid var(--border); border-radius: 6px; overflow: hidden; }
+    .acct-btn {
+      background: none; border: none; color: var(--muted);
+      font-size: 10px; letter-spacing: .12em; text-transform: uppercase;
+      padding: 5px 12px; cursor: pointer; font-family: var(--font);
+      transition: color 150ms, background 150ms;
+    }
+    .acct-btn + .acct-btn { border-left: 1px solid var(--border); }
+    .acct-btn.active { background: var(--card-bg); color: var(--fg); }
+    .acct-btn:hover:not(.active) { color: var(--fg); }
 
     .wrap { max-width: 960px; margin: 0 auto; padding: 40px 28px; }
 
@@ -134,6 +144,10 @@
     <a href="https://harlanswitzer.com" class="hd-site">harlanswitzer.com</a>
     <div class="hd-right">
       <span class="hd-title">email spam</span>
+      <div class="acct-toggle" id="acctToggle">
+        <button class="acct-btn active" data-acct="personal">personal</button>
+        <button class="acct-btn" data-acct="spam">spam</button>
+      </div>
       <button id="logoutBtn" class="hd-btn">logout</button>
     </div>
   </header>
@@ -185,7 +199,7 @@
     (function () {
       var dashData = null;
       var currentPeriod = 'last7d';
-      var CACHE_KEY = 'spam-dash-v1';
+      var currentAccount = 'personal';
 
       document.getElementById('logoutBtn').addEventListener('click', function () {
         fetch('/auth/logout', { method: 'POST' }).then(function () { location.href = '/'; });
@@ -200,19 +214,49 @@
         if (dashData) renderStats(dashData.stats);
       });
 
-      // show cached data immediately, then refresh in background
-      try {
-        var cached = JSON.parse(sessionStorage.getItem(CACHE_KEY));
-        if (cached) {
-          dashData = cached;
-          renderStats(cached.stats);
-          renderRows(cached.recentRows);
-          document.getElementById('loading').style.display = 'none';
-          document.getElementById('main').style.display = '';
-        }
-      } catch (e) {}
+      document.getElementById('acctToggle').addEventListener('click', function (e) {
+        var btn = e.target.closest('.acct-btn');
+        if (!btn || btn.classList.contains('active')) return;
+        var acct = btn.dataset.acct;
+        document.querySelectorAll('.acct-btn').forEach(function (b) { b.classList.remove('active'); });
+        btn.classList.add('active');
+        currentAccount = acct;
+        fetch('/api/email-spam/account', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ account: acct })
+        });
+        dashData = null;
+        document.getElementById('tblBody').innerHTML = '';
+        loadDashboard();
+      });
 
-      loadDashboard();
+      // load account preference, show cached data, then fresh load
+      fetch('/api/email-spam/account')
+        .then(function (r) {
+          if (r.status === 401) { location.href = '/'; return null; }
+          return r.json();
+        })
+        .then(function (d) {
+          if (!d) return;
+          currentAccount = d.account || 'personal';
+          document.querySelectorAll('.acct-btn').forEach(function (b) {
+            b.classList.toggle('active', b.dataset.acct === currentAccount);
+          });
+          // show cached data for this account immediately
+          try {
+            var cached = JSON.parse(sessionStorage.getItem('spam-dash-' + currentAccount));
+            if (cached) {
+              dashData = cached;
+              renderStats(cached.stats);
+              renderRows(cached.recentRows);
+              document.getElementById('loading').style.display = 'none';
+              document.getElementById('main').style.display = '';
+            }
+          } catch (e) {}
+          loadDashboard();
+        })
+        .catch(function () { loadDashboard(); });
 
       function loadDashboard() {
         fetch('/api/email-spam/dashboard')
@@ -230,7 +274,7 @@
               return;
             }
             dashData = resp.data;
-            try { sessionStorage.setItem(CACHE_KEY, JSON.stringify(dashData)); } catch (e) {}
+            try { sessionStorage.setItem('spam-dash-' + currentAccount, JSON.stringify(dashData)); } catch (e) {}
             renderStats(dashData.stats);
             renderRows(dashData.recentRows);
           })
@@ -264,6 +308,10 @@
           tbody.appendChild(tr);
           return;
         }
+        // sort newest first
+        rows = rows.slice().sort(function (a, b) {
+          return new Date(b['timestamp'] || 0) - new Date(a['timestamp'] || 0);
+        });
         rows.forEach(function (row) {
           var ts      = row['timestamp'] ? new Date(row['timestamp']) : null;
           var tsStr   = ts && !isNaN(ts) ? ts.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: '2-digit' }) : '';
