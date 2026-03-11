@@ -158,7 +158,11 @@
       <span class="ctrl-msg" id="ctrlMsg"></span>
     </div>
 
-    <div class="section-title">recent activity</div>
+    <div style="display:flex;align-items:center;gap:14px;margin-bottom:14px">
+      <div class="section-title" style="margin-bottom:0">recent activity</div>
+      <button id="btnReveal" class="hd-btn" style="font-size:10px;padding:4px 10px">reveal senders &amp; subjects</button>
+      <span id="revealNote" style="font-size:11px;color:var(--muted)">masked by default</span>
+    </div>
     <div class="tbl-wrap">
       <table>
         <thead>
@@ -181,6 +185,7 @@
     (function () {
       var dashData = null;
       var currentPeriod = 'last7d';
+      var detailsMode = 'masked';
 
       document.getElementById('logoutBtn').addEventListener('click', function () {
         fetch('/auth/logout', { method: 'POST' }).then(function () { location.href = '/'; });
@@ -196,31 +201,48 @@
         if (dashData) renderStats(dashData.stats);
       });
 
+      // reveal toggle
+      document.getElementById('btnReveal').addEventListener('click', function () {
+        if (detailsMode === 'full') {
+          detailsMode = 'masked';
+          this.textContent = 'reveal senders & subjects';
+          document.getElementById('revealNote').textContent = 'masked by default';
+        } else {
+          detailsMode = 'full';
+          this.textContent = 'hide senders & subjects';
+          document.getElementById('revealNote').textContent = 'showing full data';
+        }
+        loadDashboard(true);
+      });
+
       // auth check
       fetch('/auth/me')
         .then(function (r) { return r.json(); })
         .then(function (d) {
           if (!d.loggedIn) { location.href = '/'; return; }
-          loadDashboard();
+          loadDashboard(false);
         })
         .catch(function () { location.href = '/'; });
 
-      function loadDashboard() {
-        fetch('/api/email-spam/dashboard')
+      function loadDashboard(rowsOnly) {
+        var url = '/api/email-spam/dashboard?details=' + detailsMode;
+        fetch(url)
           .then(function (r) { return r.json(); })
           .then(function (resp) {
-            document.getElementById('loading').style.display = 'none';
-            document.getElementById('main').style.display = '';
+            if (!rowsOnly) {
+              document.getElementById('loading').style.display = 'none';
+              document.getElementById('main').style.display = '';
+            }
             if (!resp.success || !resp.data) {
               document.getElementById('main').innerHTML = '<p style="color:var(--muted);font-size:12px">error: ' + (resp.error || 'unknown') + '</p>';
               return;
             }
             dashData = resp.data;
-            renderStats(dashData.stats);
+            if (!rowsOnly) renderStats(dashData.stats);
             renderRows(dashData.recentRows);
           })
-          .catch(function (err) {
-            document.getElementById('loading').textContent = 'failed to load dashboard';
+          .catch(function () {
+            if (!rowsOnly) document.getElementById('loading').textContent = 'failed to load dashboard';
           });
       }
 

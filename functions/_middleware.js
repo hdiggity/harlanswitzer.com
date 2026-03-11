@@ -38,6 +38,10 @@ export async function onRequest(context) {
     const sub = path.replace(/^\/trading-cards\/?/, '/') || '/';
     return Response.redirect('https://' + CARDS_HOST + sub + url.search, 301);
   }
+  if (path === '/email-spam' || path.startsWith('/email-spam/')) {
+    const sub = path.replace(/^\/email-spam\/?/, '/') || '/';
+    return Response.redirect('https://' + SPAM_HOST + sub + url.search, 301);
+  }
 
   // ── bot score gate ────────────────────────────────────────────────────────
   if (!path.startsWith('/auth/')) {

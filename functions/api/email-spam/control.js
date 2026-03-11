@@ -6,6 +6,10 @@ export async function onRequestPost(context) {
   const session = await verifySession(request, env);
   if (!session) return json({ error: 'unauthorized' }, 401);
 
+  const caller = await env.db.prepare('SELECT is_admin FROM users WHERE id = ?')
+    .bind(session.user_id).first();
+  if (!caller?.is_admin) return json({ error: 'forbidden' }, 403);
+
   let body;
   try {
     body = await request.json();
@@ -26,7 +30,7 @@ export async function onRequestPost(context) {
   let resp;
   try {
     resp = await fetch(url);
-  } catch (err) {
+  } catch {
     return json({ error: 'apps script unreachable' }, 502);
   }
 
