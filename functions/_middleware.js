@@ -194,7 +194,7 @@ async function handleCards(request, env, url) {
     } else {
       respHeaders.set('Cache-Control', 'public, max-age=3600');
     }
-    return new Response(resp.body, { status: resp.status, headers: withSecHeaders(respHeaders) });
+    return new Response(resp.body, { status: resp.status, headers: respHeaders });
   }
 
   // all other requests require a valid session
@@ -224,7 +224,7 @@ async function handleCards(request, env, url) {
     );
     const respHeaders = new Headers(resp.headers);
     respHeaders.set('Cache-Control', 'no-store');
-    return new Response(resp.body, { status: resp.status, headers: withSecHeaders(respHeaders) });
+    return new Response(resp.body, { status: resp.status, headers: respHeaders });
   }
 
   // /api/*, /cards/*, /health* — proxy to vm
