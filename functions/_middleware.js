@@ -215,7 +215,15 @@ async function handleCards(request, env, url) {
   }
 
   const respHeaders = new Headers(resp.headers);
-  respHeaders.set('Cache-Control', 'no-store');
+  if (url.pathname.startsWith('/static/')) {
+    // content-hashed CRA assets - safe to cache indefinitely
+    respHeaders.set('Cache-Control', 'public, max-age=31536000, immutable');
+  } else if (isStaticAsset) {
+    // favicon, manifest, etc. - short cache, revalidate
+    respHeaders.set('Cache-Control', 'public, max-age=3600');
+  } else {
+    respHeaders.set('Cache-Control', 'no-store');
+  }
   respHeaders.delete('transfer-encoding');
   respHeaders.delete('connection');
 

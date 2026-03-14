@@ -64,7 +64,13 @@ export async function onRequest(context) {
   }
 
   const respHeaders = new Headers(resp.headers);
-  respHeaders.set('Cache-Control', 'no-store');
+  if (pathStr.startsWith('/static/')) {
+    respHeaders.set('Cache-Control', 'public, max-age=31536000, immutable');
+  } else if (isStaticAsset) {
+    respHeaders.set('Cache-Control', 'public, max-age=3600');
+  } else {
+    respHeaders.set('Cache-Control', 'no-store');
+  }
   // remove hop-by-hop headers
   respHeaders.delete('transfer-encoding');
   respHeaders.delete('connection');
