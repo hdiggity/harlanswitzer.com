@@ -180,20 +180,34 @@ async function handleCards(request, env, url) {
 
   const session = await verifySession(request, env);
 
-  // public static assets: serve from cloudflare pages edge, no auth required
+  // public static assets: proxy to vm (no auth required; vm auto-authenticates via proxy secret)
+  // note: NOT served from ASSETS because forwarding Accept-Encoding headers to env.ASSETS.fetch()
+  // causes a content-encoding mismatch when the body is re-wrapped in new Response()
   if (isPublicStatic) {
-    const assetUrl = new URL(request.url);
-    assetUrl.hostname = MAIN_HOST;
-    assetUrl.pathname = '/trading-cards' + url.pathname;
-    const resp = await env.ASSETS.fetch(
-      new Request(assetUrl.toString(), { method: 'GET', headers: request.headers })
-    );
+    const origin = env.TRADING_CARDS_ORIGIN;
+    if (!origin) return jsonResp({ error: 'origin not configured' }, 500);
+    const targetUrl = origin.replace(/\/$/, '') + url.pathname + url.search;
+    const headers = new Headers(request.headers);
+    headers.set('X-Trading-Proxy-Secret', env.TRADING_CARDS_PROXY_SECRET || '');
+    headers.delete('cf-connecting-ip');
+    headers.delete('cf-ray');
+    headers.delete('cf-ipcountry');
+    headers.delete('cf-visitor');
+    let resp;
+    try {
+      resp = await fetch(targetUrl, { method: 'GET', headers });
+    } catch (err) {
+      console.error('[cards proxy] static fetch error:', err);
+      return jsonResp({ error: 'origin unreachable' }, 502);
+    }
     const respHeaders = new Headers(resp.headers);
     if (url.pathname.startsWith('/static/')) {
       respHeaders.set('Cache-Control', 'public, max-age=31536000, immutable');
     } else {
       respHeaders.set('Cache-Control', 'public, max-age=3600');
     }
+    respHeaders.delete('transfer-encoding');
+    respHeaders.delete('connection');
     return new Response(resp.body, { status: resp.status, headers: respHeaders });
   }
 
@@ -214,16 +228,20 @@ async function handleCards(request, env, url) {
   if (!user) return jsonResp({ error: 'unauthorized' }, 401);
   if (!isAllowed(user.username, env)) return jsonResp({ error: 'forbidden' }, 403);
 
-  // SPA routes (incl. root): serve index.html from cloudflare pages edge
+  // SPA routes (incl. root): serve index.html from cloudflare pages edge (no vm round-trip)
+  // use a clean request with no Accept-Encoding to avoid content-encoding issues when re-wrapping
   if (isSpaRoute) {
     const assetUrl = new URL(request.url);
     assetUrl.hostname = MAIN_HOST;
     assetUrl.pathname = '/trading-cards/index.html';
     const resp = await env.ASSETS.fetch(
-      new Request(assetUrl.toString(), { method: 'GET', headers: request.headers })
+      new Request(assetUrl.toString(), { method: 'GET' })
     );
     const respHeaders = new Headers(resp.headers);
     respHeaders.set('Cache-Control', 'no-store');
+    // override the _headers CSP to allow google fonts and cloudflare beacon
+    respHeaders.set('Content-Security-Policy',
+      "default-src 'self'; script-src 'self' 'unsafe-inline' https://static.cloudflareinsights.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; connect-src 'self'; img-src 'self' data: blob:; manifest-src 'self'; frame-ancestors 'none'");
     return new Response(resp.body, { status: resp.status, headers: respHeaders });
   }
 
