@@ -166,13 +166,39 @@ async function handleBests(request, env, next, url) {
 
 // ── trading-cards subdomain ───────────────────────────────────────────────────
 async function handleCards(request, env, url) {
-  const isStaticAsset =
+  // public static assets — CRA JS/CSS bundles, icons, manifests, robots.txt
+  // these don't require auth (browser loads them before React initialises)
+  const isPublicStatic =
     url.pathname.startsWith('/static/') ||
-    /\.(js|css|png|ico|woff2?|svg|webp|jpg|jpeg|gif|map|json)$/.test(url.pathname);
+    /\.(js|css|png|ico|woff2?|svg|webp|jpg|jpeg|gif|map|json|txt)$/.test(url.pathname);
+
+  // SPA html routes — everything that isn't an API or image call
+  const isSpaRoute =
+    !url.pathname.startsWith('/api/') &&
+    !url.pathname.startsWith('/cards/') &&
+    !url.pathname.startsWith('/health');
 
   const session = await verifySession(request, env);
 
-  if (!session && !isStaticAsset) {
+  // public static assets: serve from cloudflare pages edge, no auth required
+  if (isPublicStatic) {
+    const assetUrl = new URL(request.url);
+    assetUrl.hostname = MAIN_HOST;
+    assetUrl.pathname = '/trading-cards' + url.pathname;
+    const resp = await env.ASSETS.fetch(
+      new Request(assetUrl.toString(), { method: 'GET', headers: request.headers })
+    );
+    const respHeaders = new Headers(resp.headers);
+    if (url.pathname.startsWith('/static/')) {
+      respHeaders.set('Cache-Control', 'public, max-age=31536000, immutable');
+    } else {
+      respHeaders.set('Cache-Control', 'public, max-age=3600');
+    }
+    return new Response(resp.body, { status: resp.status, headers: withSecHeaders(respHeaders) });
+  }
+
+  // all other requests require a valid session
+  if (!session) {
     const acceptsHtml = (request.headers.get('accept') || '').includes('text/html');
     if (acceptsHtml) {
       return Response.redirect(
@@ -182,13 +208,26 @@ async function handleCards(request, env, url) {
     return jsonResp({ error: 'unauthorized' }, 401);
   }
 
-  if (session && !isStaticAsset) {
-    const user = await env.db.prepare('SELECT id, username FROM users WHERE id = ?')
-      .bind(session.user_id).first();
-    if (!user) return jsonResp({ error: 'unauthorized' }, 401);
-    if (!isAllowed(user.username, env)) return jsonResp({ error: 'forbidden' }, 403);
+  // check that the user is in the allowed list
+  const user = await env.db.prepare('SELECT id, username FROM users WHERE id = ?')
+    .bind(session.user_id).first();
+  if (!user) return jsonResp({ error: 'unauthorized' }, 401);
+  if (!isAllowed(user.username, env)) return jsonResp({ error: 'forbidden' }, 403);
+
+  // SPA routes (incl. root): serve index.html from cloudflare pages edge
+  if (isSpaRoute) {
+    const assetUrl = new URL(request.url);
+    assetUrl.hostname = MAIN_HOST;
+    assetUrl.pathname = '/trading-cards/index.html';
+    const resp = await env.ASSETS.fetch(
+      new Request(assetUrl.toString(), { method: 'GET', headers: request.headers })
+    );
+    const respHeaders = new Headers(resp.headers);
+    respHeaders.set('Cache-Control', 'no-store');
+    return new Response(resp.body, { status: resp.status, headers: withSecHeaders(respHeaders) });
   }
 
+  // /api/*, /cards/*, /health* — proxy to vm
   const origin = env.TRADING_CARDS_ORIGIN;
   if (!origin) return jsonResp({ error: 'origin not configured' }, 500);
 
@@ -215,15 +254,7 @@ async function handleCards(request, env, url) {
   }
 
   const respHeaders = new Headers(resp.headers);
-  if (url.pathname.startsWith('/static/')) {
-    // content-hashed CRA assets - safe to cache indefinitely
-    respHeaders.set('Cache-Control', 'public, max-age=31536000, immutable');
-  } else if (isStaticAsset) {
-    // favicon, manifest, etc. - short cache, revalidate
-    respHeaders.set('Cache-Control', 'public, max-age=3600');
-  } else {
-    respHeaders.set('Cache-Control', 'no-store');
-  }
+  respHeaders.set('Cache-Control', 'no-store');
   respHeaders.delete('transfer-encoding');
   respHeaders.delete('connection');
 
