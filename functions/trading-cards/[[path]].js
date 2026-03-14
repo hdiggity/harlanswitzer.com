@@ -19,21 +19,38 @@ export async function onRequest(context) {
 
   const pathParts = Array.isArray(params.path) ? params.path : [];
   const pathStr = pathParts.length > 0 ? '/' + pathParts.join('/') : '/';
-  const isStaticAsset = pathStr.startsWith('/static/') || pathStr === '/favicon.ico' ||
+  const isStaticAsset = pathStr === '/' || pathStr === '/index.html' ||
+    pathStr.startsWith('/static/') || pathStr === '/favicon.ico' ||
     pathStr === '/manifest.json' || pathStr === '/logo192.png' || pathStr === '/logo512.png' ||
-    pathStr === '/asset-manifest.json';
+    pathStr === '/asset-manifest.json' || pathStr === '/robots.txt';
 
   // auth: require valid session for all requests
   const session = await verifySession(request, env);
   if (!session) return json({ error: 'unauthorized' }, 401);
 
-  if (!isStaticAsset) {
-    const user = await env.db.prepare(
-      'SELECT id, username FROM users WHERE id = ?'
-    ).bind(session.user_id).first();
-    if (!user) return json({ error: 'unauthorized' }, 401);
-    if (!isAllowed(user.username, env)) return json({ error: 'forbidden' }, 403);
+  // serve static react assets from cloudflare pages (no vm round-trip)
+  if (isStaticAsset) {
+    const assetPath = (pathStr === '/' || pathStr === '/index.html')
+      ? '/trading-cards/index.html'
+      : '/trading-cards' + pathStr;
+    const assetUrl = new URL(request.url);
+    assetUrl.pathname = assetPath;
+    const assetResp = await context.env.ASSETS.fetch(new Request(assetUrl.toString(), { method: 'GET', headers: request.headers }));
+    const respHeaders = new Headers(assetResp.headers);
+    if (pathStr.startsWith('/static/')) {
+      respHeaders.set('Cache-Control', 'public, max-age=31536000, immutable');
+    } else {
+      respHeaders.set('Cache-Control', 'public, max-age=3600');
+    }
+    return new Response(assetResp.body, { status: assetResp.status, headers: respHeaders });
   }
+
+  // non-static: check allowed users, then proxy to vm
+  const user = await env.db.prepare(
+    'SELECT id, username FROM users WHERE id = ?'
+  ).bind(session.user_id).first();
+  if (!user) return json({ error: 'unauthorized' }, 401);
+  if (!isAllowed(user.username, env)) return json({ error: 'forbidden' }, 403);
 
   const origin = env.TRADING_CARDS_ORIGIN;
   if (!origin) return json({ error: 'origin not configured' }, 500);
@@ -64,14 +81,7 @@ export async function onRequest(context) {
   }
 
   const respHeaders = new Headers(resp.headers);
-  if (pathStr.startsWith('/static/')) {
-    respHeaders.set('Cache-Control', 'public, max-age=31536000, immutable');
-  } else if (isStaticAsset) {
-    respHeaders.set('Cache-Control', 'public, max-age=3600');
-  } else {
-    respHeaders.set('Cache-Control', 'no-store');
-  }
-  // remove hop-by-hop headers
+  respHeaders.set('Cache-Control', 'no-store');
   respHeaders.delete('transfer-encoding');
   respHeaders.delete('connection');
 
