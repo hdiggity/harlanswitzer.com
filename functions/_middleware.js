@@ -13,7 +13,7 @@ const SEC_HEADERS = {
   'Referrer-Policy':         'strict-origin-when-cross-origin',
   'Permissions-Policy':      'camera=(), microphone=(), geolocation=()',
   'Content-Security-Policy':
-    "default-src 'none'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; connect-src 'self'; img-src 'self' data:; frame-ancestors 'none'",
+    "default-src 'none'; script-src 'self' 'unsafe-inline' https://static.cloudflareinsights.com; style-src 'self' 'unsafe-inline'; connect-src 'self' https://static.cloudflareinsights.com; img-src 'self' data:; frame-ancestors 'none'",
 };
 
 export async function onRequest(context) {
