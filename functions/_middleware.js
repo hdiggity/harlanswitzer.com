@@ -180,34 +180,22 @@ async function handleCards(request, env, url) {
 
   const session = await verifySession(request, env);
 
-  // public static assets: proxy to vm (no auth required; vm auto-authenticates via proxy secret)
-  // note: NOT served from ASSETS because forwarding Accept-Encoding headers to env.ASSETS.fetch()
-  // causes a content-encoding mismatch when the body is re-wrapped in new Response()
+  // public static assets: serve from cloudflare pages edge (no vm round-trip, no auth required)
+  // use a clean request with no headers — forwarding Accept-Encoding causes content-encoding
+  // mismatch when the body is re-wrapped in new Response()
   if (isPublicStatic) {
-    const origin = env.TRADING_CARDS_ORIGIN;
-    if (!origin) return jsonResp({ error: 'origin not configured' }, 500);
-    const targetUrl = origin.replace(/\/$/, '') + url.pathname + url.search;
-    const headers = new Headers(request.headers);
-    headers.set('X-Trading-Proxy-Secret', env.TRADING_CARDS_PROXY_SECRET || '');
-    headers.delete('cf-connecting-ip');
-    headers.delete('cf-ray');
-    headers.delete('cf-ipcountry');
-    headers.delete('cf-visitor');
-    let resp;
-    try {
-      resp = await fetch(targetUrl, { method: 'GET', headers });
-    } catch (err) {
-      console.error('[cards proxy] static fetch error:', err);
-      return jsonResp({ error: 'origin unreachable' }, 502);
-    }
+    const assetUrl = new URL(request.url);
+    assetUrl.hostname = MAIN_HOST;
+    assetUrl.pathname = '/trading-cards' + url.pathname;
+    const resp = await env.ASSETS.fetch(
+      new Request(assetUrl.toString(), { method: 'GET' })
+    );
     const respHeaders = new Headers(resp.headers);
     if (url.pathname.startsWith('/static/')) {
       respHeaders.set('Cache-Control', 'public, max-age=31536000, immutable');
     } else {
       respHeaders.set('Cache-Control', 'public, max-age=3600');
     }
-    respHeaders.delete('transfer-encoding');
-    respHeaders.delete('connection');
     return new Response(resp.body, { status: resp.status, headers: respHeaders });
   }
 
