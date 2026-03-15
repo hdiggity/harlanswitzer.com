@@ -181,22 +181,12 @@ async function handleCards(request, env, url) {
   const session = await verifySession(request, env);
 
   // public static assets: serve from cloudflare pages edge (no vm round-trip, no auth required)
-  // use a clean request with no headers — forwarding Accept-Encoding causes content-encoding
-  // mismatch when the body is re-wrapped in new Response()
+  // return the ASSETS response directly — re-wrapping the body in new Response() truncates it
   if (isPublicStatic) {
     const assetUrl = new URL(request.url);
     assetUrl.hostname = MAIN_HOST;
     assetUrl.pathname = '/trading-cards' + url.pathname;
-    const resp = await env.ASSETS.fetch(
-      new Request(assetUrl.toString(), { method: 'GET' })
-    );
-    const respHeaders = new Headers(resp.headers);
-    if (url.pathname.startsWith('/static/')) {
-      respHeaders.set('Cache-Control', 'public, max-age=31536000, immutable');
-    } else {
-      respHeaders.set('Cache-Control', 'public, max-age=3600');
-    }
-    return new Response(resp.body, { status: resp.status, headers: respHeaders });
+    return env.ASSETS.fetch(new Request(assetUrl.toString(), { method: 'GET' }));
   }
 
   // all other requests require a valid session
