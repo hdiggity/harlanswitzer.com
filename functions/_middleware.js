@@ -168,9 +168,10 @@ async function handleBests(request, env, next, url) {
 async function handleCards(request, env, url) {
   // public static assets — CRA JS/CSS bundles, icons, manifests, robots.txt
   // these don't require auth (browser loads them before React initialises)
-  // /cards/* are card images served from the VM — exclude them even if they have image extensions
+  // /cards/* and /api/* are served from the VM — exclude them even if they have file extensions
   const isPublicStatic =
-    !url.pathname.startsWith('/cards/') && (
+    !url.pathname.startsWith('/cards/') &&
+    !url.pathname.startsWith('/api/') && (
       url.pathname.startsWith('/static/') ||
       /\.(js|css|png|ico|woff2?|svg|webp|jpg|jpeg|gif|map|json|txt)$/.test(url.pathname)
     );
